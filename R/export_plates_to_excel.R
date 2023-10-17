@@ -99,7 +99,7 @@ export_plates_to_excel <- function(assays,
         }
     }
 
-    # We can't forget the add the metadata which now has the primer info
+    # We can't forget the add the metadata and position df
     writeData(
         wb,
         sheet = "metadata",

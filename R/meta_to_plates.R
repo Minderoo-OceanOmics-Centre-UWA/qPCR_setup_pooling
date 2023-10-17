@@ -19,6 +19,7 @@ meta_to_plates <- function(input_file,
                            controls = c("ITC", "NTC"),
                            control_pattern = "WC|DI|EB|BC|NTC|ITC|Cont") {
 
+    # Import our data
     meta_df  <- import_meta_df(input_file, run)
     index_df <- import_index_df(input_file, assays)
 
@@ -50,8 +51,16 @@ meta_to_plates <- function(input_file,
         )
     }
 
-    # The number of plates and primers we need
-    # is determined by the number of samples we have
+    # Get vectors to be used to get `plate_count`, `fw_count`, and `rv_count`
+    # These vectors are:
+    # - a vector of sample cutoffs based on based on number of samples per plate
+    #   E.g., c(96, 192, 288, 384)
+    # - a vector of possible plate counts
+    #   E.g., c(1, 2, 3, 4)
+    # - a vector of possible fw counts
+    #   E.g., c(12, 12, 12, 24)
+    # - a vector of possible rv counts
+    #   E.g., c(8, 16, 24, 24)
     sample_count <- length(sample_ids)
     possible_counts <- get_possible_counts(
         sample_ids,
@@ -60,10 +69,11 @@ meta_to_plates <- function(input_file,
         plate_width
     )
     possible_plate_counts <- possible_counts$plates
-    possible_fw_counts <- possible_counts$fws
-    possible_rv_counts <- possible_counts$rvs
-    sample_cutoffs <- possible_counts$cutoffs
+    possible_fw_counts    <- possible_counts$fws
+    possible_rv_counts    <- possible_counts$rvs
+    sample_cutoffs        <- possible_counts$cutoffs
 
+    # We should only need this tryCatch once
     tryCatch(
         plate_count  <- get_value_when_num_le_cutoff(
             sample_count,
@@ -76,16 +86,16 @@ meta_to_plates <- function(input_file,
     )
 
     fw_count <- get_value_when_num_le_cutoff(
-            sample_count,
-            sample_cutoffs,
-            possible_fw_counts
-        )
+        sample_count,
+        sample_cutoffs,
+        possible_fw_counts
+    )
 
     rv_count <- get_value_when_num_le_cutoff(
-            sample_count,
-            sample_cutoffs,
-            possible_rv_counts
-        )
+        sample_count,
+        sample_cutoffs,
+        possible_rv_counts
+    )
 
     meta_df     <- reformat_meta_df(
         meta_df,
@@ -96,10 +106,9 @@ meta_to_plates <- function(input_file,
         fw_count,
         rv_count,
         plate_height,
-        plate_width
+        plate_width,
+        run
     )
-
-    print(meta_df$RV_NO)
 
     position_df <- create_position_df(
         meta_df,
@@ -110,7 +119,7 @@ meta_to_plates <- function(input_file,
         control_pattern
     )
 
-    # plates and big_plates will be lists of data frames
+    # plates and big_plates will be named lists of data frames
     plates       <- list()
     big_plates   <- list()
 
@@ -147,6 +156,10 @@ meta_to_plates <- function(input_file,
             first_sample <- first_sample + (plate_height * plate_width)
             last_sample  <- last_sample + (plate_height * plate_width)
 
+            # We ran out of rv primers, so move onto next set of fw primers
+            #
+            # TODO: I may need to test this more to make sure it works
+            #
             if ((last_rv + plate_height) > rv_count) {
                 first_rv    <- 1
                 last_rv     <- plate_height

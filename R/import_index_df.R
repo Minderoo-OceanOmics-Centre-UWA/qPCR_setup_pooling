@@ -56,7 +56,6 @@ import_index_df <- function(excel_file, assays) {
                 )
             )
         }
-        # Validate index sheet columns
         if (!("PRIMERSEQ" %in% colnames(curr_index_df))) {
             stop(
                 paste0(
@@ -66,7 +65,6 @@ import_index_df <- function(excel_file, assays) {
                 )
             )
         }
-        # Validate index sheet columns
         if (!("TAGS" %in% colnames(curr_index_df))) {
             stop(
                 paste0(
@@ -76,7 +74,6 @@ import_index_df <- function(excel_file, assays) {
                 )
             )
         }
-        # Validate index sheet columns
         if (!("FWRV" %in% colnames(curr_index_df))) {
             stop(
                 paste0(

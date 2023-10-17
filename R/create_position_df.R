@@ -20,6 +20,8 @@ create_position_df <- function(meta_df,
     position_df["plate_number_Pos"]       <- NULL
     position_df["sample_type"]            <- NULL
     replicates                            <- c("1", "2", "3", "pool")
+
+    # Duplicate rows based on number of replicates
     position_df <- position_df[
         rep(
             seq_len(
@@ -36,6 +38,7 @@ create_position_df <- function(meta_df,
     )
     row.names(position_df) <- NULL
 
+    # Get a vector of characters based big plate height.
     well_rows      <- c()
     char           <- "A"
     for (i in 1:(plate_height * 2)) {
@@ -45,22 +48,23 @@ create_position_df <- function(meta_df,
     }
 
     for (assay in assays) {
+        # Track sample. Starts again for each assay.
         sample_i <- 1
         for (plate_num in (1:plate_count)) {
-            # Track the well and replicate we are up to \
+            # Track the well and replicate. Start again for each plate.
             well_row_index <- 1
             well_col       <- 1
             replicate      <- "1"
 
-            # There is 24 columns and 16 rows per big plate,
-            # so we need to loop 384 times
+            # Loop through each cell in big plate
             for (i in 1:((plate_height * 2) * (plate_width * 2))) {
                 well <- paste0(well_rows[well_row_index], well_col)
 
+                # Exit loop if we have run out of samples
                 if (sample_i > sample_count) {
                     break
                 }
-                curr_sample     <- sample_ids[sample_i]
+                curr_sample <- sample_ids[sample_i]
 
                 # Flag samples as controls when they match the pattern
                 if (grepl(control_pattern, c(curr_sample))) {
@@ -113,8 +117,8 @@ create_position_df <- function(meta_df,
                 # If the current replicate is 'pool',
                 # we need to check if we are up to the last row
                 } else if (replicate == "pool") {
-                replicate <- "1"
-                sample_i  <- sample_i + 1
+                    replicate <- "1"
+                    sample_i  <- sample_i + 1
 
                     # If it is the last row,
                     # move to the first row,
