@@ -1,4 +1,4 @@
-import_meta_df <- function(excel_file) {
+import_meta_df <- function(excel_file, run) {
     excel_sheets <- excel_sheets(excel_file)
     meta_sheet   <- grep(
         glob2rx("metadata"),
@@ -10,16 +10,17 @@ import_meta_df <- function(excel_file) {
     # Validate number of sheets called 'metadata'
     if (length(meta_sheet) == 0) {
         stop("No sheets found nemed 'metadata'")
-    } 
+    }
     if (length(meta_sheet) > 1) {
         stop("Multiple sheets found named 'metadata'")
     }
 
     # Import metadata
-    meta_df   <- read_excel(excel_file, sheet="metadata") %>%
+    meta_df   <- read_excel(excel_file, sheet = "metadata") %>%
         as.data.frame()
-    names(meta_df) <- gsub(" ", "", names(meta_df)) %>%
-        { gsub("_", "", .) } %>%
+    names(meta_df) <- gsub(" ", "", names(meta_df)) %>% {
+            gsub("_", "", .)
+        } %>%
         toupper()
 
     # Validata metadata columns

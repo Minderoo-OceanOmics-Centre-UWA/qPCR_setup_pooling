@@ -39,10 +39,11 @@ import_index_df <- function(excel_file, assays) {
         }
 
         # Import index sheet
-        curr_index_df <- read_excel(excel_file, sheet=curr_index_sheet) %>%
+        curr_index_df <- read_excel(excel_file, sheet = curr_index_sheet) %>%
             as.data.frame()
-        names(curr_index_df) <- gsub(" ", "", names(curr_index_df)) %>%
-            { gsub("_", "", .) } %>%
+        names(curr_index_df) <- gsub(" ", "", names(curr_index_df)) %>% {
+                gsub("_", "", .)
+            } %>%
             toupper()
 
         # Validate index sheet columns

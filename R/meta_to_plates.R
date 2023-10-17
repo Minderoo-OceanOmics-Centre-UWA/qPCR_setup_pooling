@@ -19,7 +19,7 @@ meta_to_plates <- function(input_file,
                            controls = c("ITC", "NTC"),
                            control_pattern = "WC|DI|EB|BC|NTC|ITC|Cont") {
 
-    meta_df  <- import_meta_df(input_file)
+    meta_df  <- import_meta_df(input_file, run)
     index_df <- import_index_df(input_file, assays)
 
     # Get sample ids
@@ -70,7 +70,7 @@ meta_to_plates <- function(input_file,
             sample_cutoffs,
             possible_plate_counts
         ),
-        error = function(e){
+        error = function(e) {
             message("Error: You may have too many samples\n", e)
         }
     )
@@ -120,7 +120,7 @@ meta_to_plates <- function(input_file,
         first_rv     <- 1
         last_rv      <- plate_height
         first_sample <- 1
-        last_sample  <- plate_height*plate_width
+        last_sample  <- plate_height * plate_width
         for (plate_num in (1:plate_count)) {
             plate_dfs <- get_plate_dfs(
                 first_fw,
@@ -144,8 +144,8 @@ meta_to_plates <- function(input_file,
             plates[key][[1]]     <- plate_dfs$small_plate
             big_plates[key][[1]] <- plate_dfs$big_plate
 
-            first_sample <- first_sample + (plate_height*plate_width)
-            last_sample  <- last_sample + (plate_height*plate_width)
+            first_sample <- first_sample + (plate_height * plate_width)
+            last_sample  <- last_sample + (plate_height * plate_width)
 
             if ((last_rv + plate_height) > rv_count) {
                 first_rv    <- 1
@@ -166,6 +166,7 @@ meta_to_plates <- function(input_file,
         big_plates,
         meta_df,
         position_df,
-        output_file
+        output_file,
+        plate_height
     )
 }

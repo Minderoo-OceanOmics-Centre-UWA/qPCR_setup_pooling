@@ -27,7 +27,7 @@ reformat_meta_df <- function(meta_df,
             meta_df <- rbind(
                 meta_df[1:left_of_controls, ],
                 control_rows,
-                meta_df[(left_of_controls+1):nrow(meta_df), ]
+                meta_df[(left_of_controls + 1):nrow(meta_df), ]
             )
         }
 
@@ -86,7 +86,7 @@ reformat_meta_df <- function(meta_df,
         char      <- LETTERS[which(LETTERS == char) + 1L]
     }
 
-    # There is 12 columns and 8 rows per plate, 
+    # There is 12 columns and 8 rows per plate,
     # so these for loops will iterate 96 times
     for (assay in assays) {
         sample_i <- 0

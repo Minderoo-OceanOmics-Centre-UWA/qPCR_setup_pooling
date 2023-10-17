@@ -3,7 +3,8 @@ export_plates_to_excel <- function(assays,
                                    big_plates,
                                    meta_df,
                                    position_df,
-                                   output_file) {
+                                   output_file,
+                                   plate_height) {
     # Create a workbook object
     wb <- createWorkbook()
 
@@ -20,7 +21,7 @@ export_plates_to_excel <- function(assays,
     # the Excel sheet
     row_start        <- 1
     big_row_start    <- 1
-    plate_count      <- length(plates)/length(assays)
+    plate_count      <- length(plates) / length(assays)
 
     for (assay in assays) {
         for (plate_num in 1:plate_count) {
@@ -54,7 +55,7 @@ export_plates_to_excel <- function(assays,
             colnames(plates[key][[1]]) <- ""
 
             big_plates[key][[1]] <- rbind(
-                colnames(big_plates[key][[1]]), 
+                colnames(big_plates[key][[1]]),
                 big_plates[key][[1]]
             )
 
@@ -93,8 +94,8 @@ export_plates_to_excel <- function(assays,
                 rowNames = FALSE
             )
 
-            row_start     <- row_start + 10
-            big_row_start <- big_row_start + 18
+            row_start     <- row_start + plate_height + 2
+            big_row_start <- big_row_start + (plate_height * 2) + 2
         }
     }
 
