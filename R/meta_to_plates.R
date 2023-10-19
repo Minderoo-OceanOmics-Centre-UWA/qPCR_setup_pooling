@@ -1,11 +1,11 @@
-source("/data/sandbox/adam/qPCR_setup_pooling/R/import_index_df.R")
-source("/data/sandbox/adam/qPCR_setup_pooling/R/import_meta_df.R")
-source("/data/sandbox/adam/qPCR_setup_pooling/R/get_value_when_num_le_cutoff.R")
-source("/data/sandbox/adam/qPCR_setup_pooling/R/get_possible_counts.R")
-source("/data/sandbox/adam/qPCR_setup_pooling/R/reformat_meta_df.R")
-source("/data/sandbox/adam/qPCR_setup_pooling/R/create_position_df.R")
-source("/data/sandbox/adam/qPCR_setup_pooling/R/get_plate_dfs.R")
-source("/data/sandbox/adam/qPCR_setup_pooling/R/export_plates_to_excel.R")
+source("R/import_index_df.R")
+source("R/import_meta_df.R")
+source("R/get_value_when_num_le_cutoff.R")
+source("R/get_possible_counts.R")
+source("R/reformat_meta_df.R")
+source("R/create_position_df.R")
+source("R/get_plate_dfs.R")
+source("R/export_plates_to_excel.R")
 library(tidyverse)
 library(readxl)
 library(openxlsx)
@@ -25,21 +25,6 @@ meta_to_plates <- function(input_file,
 
     # Get sample ids
     sample_ids <- meta_df$SAMPLEID
-
-    # Make sure there is no duplicate samples
-    if (length(sample_ids) != length(unique(sample_ids))) {
-        duplicates <- meta_df[
-            duplicated(meta_df$SAMPLE_ID) |
-            duplicated(meta_df$SAMPLE_ID, fromLast = TRUE),
-            "SAMPLE_ID"
-        ]
-        stop(
-            paste0(
-                "You can't have duplicate sample ids. Duplicates: ",
-                duplicates
-            )
-        )
-    }
 
     # Make sure the plate_height is a valid number
     if (plate_height > 13) {

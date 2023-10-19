@@ -24,6 +24,7 @@ get_possible_counts <- function(sample_ids,
     possible_rv_counts     <- c()
     #
     # TODO: Maybe add a check to make sure these are multiples of plate_width/plate_height
+    #       can maybe use stopifnot() https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/stopifnot
     #
     max_fw_count           <- 36
     max_rv_count           <- 24
