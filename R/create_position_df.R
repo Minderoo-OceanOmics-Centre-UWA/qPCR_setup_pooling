@@ -117,7 +117,7 @@ create_position_df <- function(meta_df,
                     # If it is the last row,
                     # move to the first row,
                     # and move across one columns
-                    if (well_row_index == 16) {
+                    if (well_row_index == (plate_height * 2)) {
                         well_row_index <- 1
                         well_col <- well_col + 1
 
