@@ -37,17 +37,9 @@ get_plate_dfs <- function(first_fw,
     # We need to duplicate the primers for the big_plates,
     # but each value must be unique, so let's append _1, or _2
     doubled_fw_primers <- rep(fw_primers[first_fw:last_fw], each = 2)
-    doubled_fw_primers <- ifelse(
-        seq_along(doubled_fw_primers) %% 2 == 1,
-        paste0(doubled_fw_primers, "_1"),
-        paste0(doubled_fw_primers, "_2")
-    )
+    doubled_fw_primers <- paste0(doubled_fw_primers, c("_1", "_2"))
     doubled_rv_primers <- rep(rv_primers[first_rv:last_rv], each = 2)
-    doubled_rv_primers <- ifelse(
-        seq_along(doubled_rv_primers) %% 2 == 1,
-        paste0(doubled_rv_primers, "_1"),
-        paste0(doubled_rv_primers, "_2")
-    )
+    doubled_rv_primers <- paste0(doubled_fw_primers, c("_1", "_2"))
 
     colnames(plate)     <- fw_primers[first_fw:last_fw]
     colnames(big_plate) <- doubled_fw_primers

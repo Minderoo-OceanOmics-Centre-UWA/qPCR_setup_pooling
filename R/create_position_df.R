@@ -38,14 +38,8 @@ create_position_df <- function(meta_df,
     )
     row.names(position_df) <- NULL
 
-    # Get a vector of characters based big plate height.
-    well_rows      <- c()
-    char           <- "A"
-    for (i in 1:(plate_height * 2)) {
-        well_rows <- append(well_rows, char)
-        # Get next letter
-        char      <- LETTERS[which(LETTERS == char) + 1L]
-    }
+    # Get a vector of characters based on big plate height.
+    well_rows <- LETTERS[1:(plate_height * 2)]
 
     for (assay in assays) {
         # Track sample. Starts again for each assay.

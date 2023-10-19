@@ -107,7 +107,7 @@ reformat_meta_df <- function(meta_df,
         rv_right <- plate_height
 
         sample_i <- 0
-        stop <- FALSE
+        stop     <- FALSE
         for (plate_num in (1:plate_count)) {
             # We refresh the `well_col` for a new plate
             # It increases for each fw primer
@@ -125,7 +125,7 @@ reformat_meta_df <- function(meta_df,
                         break
                     }
 
-                    # The well will be a string containing a 
+                    # The well will be a string containing a
                     # character and a number; E.g., "A1"
                     well_row_index <- well_row_index + 1
                     well           <- paste0(
