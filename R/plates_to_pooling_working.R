@@ -24,7 +24,7 @@ read_qPCR_data <- function(file) {
     data$fileName <- gsub(
         ".txt",
         "",
-        str_split(file, "\\/\\/", simplify = TRUE)[, 2]
+        str_split(file, "\\/", simplify = TRUE)[, 3]
     )
     description       <- strsplit(data$fileName, "_")
     data$date         <- sapply(description, "[", 1)
@@ -43,10 +43,10 @@ read_qPCR_data <- function(file) {
 # these will be separate files
 # create a list of file names
 exp_name <- "testing_code"
-fnames   <- list.files("qPCR_data/", full.names = TRUE, pattern = ".txt")
+fnames   <- list.files("test_data/qPCR_test_data/", full.names = TRUE, pattern = ".txt")
 
-all_lc480_data <- ldply(fnames, read_data)
-position_df    <- read_excel("results.xlsx", sheet = "position_df") %>%
+all_lc480_data <- ldply(fnames, read_qPCR_data)
+position_df    <- read_excel("test_data/test_output.xlsx", sheet = "position_df") %>%
     as.data.frame()
 
 lc480_data_sample <- all_lc480_data %>%
