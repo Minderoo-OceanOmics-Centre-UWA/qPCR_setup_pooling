@@ -163,6 +163,32 @@ reformat_meta_df <- function(meta_df,
                     meta_df[meta_row, "PLATE"]       <- plate_num
                     meta_df[meta_row, "WELL"]        <- well
 
+                    # If the primer starts with the index, remove the index
+                    fw_primer_start <- substr(
+                        meta_df[meta_row, "FW_FULL_SEQ"],
+                        1,
+                        nchar(meta_df[meta_row, "FW_TAG"])
+                    )
+                    rv_primer_start <- substr(
+                        meta_df[meta_row, "RV_FULL_SEQ"],
+                        1,
+                        nchar(meta_df[meta_row, "RV_TAG"])
+                    )
+                    if (meta_df[meta_row, "FW_TAG"] == fw_primer_start) {
+                        meta_df[meta_row, "FW_FULL_SEQ"] <- substr(
+                            meta_df[meta_row, "FW_FULL_SEQ"],
+                            nchar(fw_primer_start) + 1,
+                            nchar(meta_df[meta_row, "FW_FULL_SEQ"])
+                        )
+                    }
+                    if (meta_df[meta_row, "RV_TAG"] == rv_primer_start) {
+                        meta_df[meta_row, "RV_FULL_SEQ"] <- substr(
+                            meta_df[meta_row, "RV_FULL_SEQ"],
+                            nchar(rv_primer_start) + 1,
+                            nchar(meta_df[meta_row, "RV_FULL_SEQ"])
+                        )
+                    }
+
                 }
                 # Stop looping through fw primers. We ran out of samples.
                 if (stop) {
