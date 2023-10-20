@@ -100,6 +100,19 @@ export_plates_to_excel <- function(assays,
     }
 
     # We can't forget the add the metadata and position df
+    colnames(meta_df) <- c(
+        "sample",
+        "sequencing_run",
+        "assay",
+        "fw_no",
+        "rv_no",
+        "fw_tag",
+        "rv_tag",
+        "fw_primer",
+        "rv_primer",
+        "plate",
+        "well"
+    )
     writeData(
         wb,
         sheet = "metadata",
@@ -108,6 +121,17 @@ export_plates_to_excel <- function(assays,
         startCol = 1
     )
 
+    colnames(position_df) <- c(
+        "sample",
+        "assay",
+        "replicate",
+        "pos",
+        "sample_replicate",
+        "plate_number",
+        "assay_plate_number_pos",
+        "plate_number_pos",
+        "sample_type"
+    )
     writeData(
         wb,
         sheet = "position_df",
