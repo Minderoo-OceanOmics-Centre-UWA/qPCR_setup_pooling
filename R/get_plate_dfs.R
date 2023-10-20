@@ -39,7 +39,7 @@ get_plate_dfs <- function(first_fw,
     doubled_fw_primers <- rep(fw_primers[first_fw:last_fw], each = 2)
     doubled_fw_primers <- paste0(doubled_fw_primers, c("_1", "_2"))
     doubled_rv_primers <- rep(rv_primers[first_rv:last_rv], each = 2)
-    doubled_rv_primers <- paste0(doubled_fw_primers, c("_1", "_2"))
+    doubled_rv_primers <- paste0(doubled_rv_primers, c("_1", "_2"))
 
     colnames(plate)     <- fw_primers[first_fw:last_fw]
     colnames(big_plate) <- doubled_fw_primers
