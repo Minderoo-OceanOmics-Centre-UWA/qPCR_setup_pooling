@@ -454,15 +454,15 @@ for (curr_assay in unique(position_df_pool$assay)) {
 }
 write_csv(out_df, "biomek_pooling_workbook.csv")
 
-minipool_all <- minipool_calc_vols %>%
-    bind_rows(.id = 'MAMAAAAA') 
-minipool_all %>%
-    mutate(SourcePosition = pos) %>%
-    dplyr::select(SourcePosition,
-        SourceWell = pos, 
-        Volume = vol_ul, 
-        DestinationPosition, DestinationWell) |> 
-    write_csv(paste0("biomek_pooling_workbook_", exp_name,".csv"))
+# minipool_all <- minipool_calc_vols %>%
+#    bind_rows(.id = 'MAMAAAAA') 
+# minipool_all %>%
+#    mutate(SourcePosition = pos) %>%
+#    dplyr::select(SourcePosition,
+#        SourceWell = pos, 
+#        Volume = vol_ul, 
+#        DestinationPosition, DestinationWell) |> 
+#    write_csv(paste0("biomek_pooling_workbook_", exp_name,".csv"))
     #View()
 
 #minipool_plots["16S_Plate1_sample"][[1]]
