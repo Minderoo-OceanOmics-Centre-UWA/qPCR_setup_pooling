@@ -69,6 +69,8 @@ plate1_16S_epf <- lc480_data_sample %>%
         title = paste0(unique(.$plate_number), " ", unique(.$assay))
     )
 
+plate1_16S_epf
+
 #Plate 2 16S
 plate2_16S_epf <- lc480_data_sample %>%
     filter(plate_number == "Plate2" & assay == "16S") %>%
@@ -79,6 +81,8 @@ plate2_16S_epf <- lc480_data_sample %>%
         plate_size = 384,
         title = paste0(unique(.$plate_number), " ", unique(.$assay))
     )
+
+plate2_16S_epf
 
 # Plate 1 MiFish
 
@@ -92,6 +96,8 @@ plate1_MiFish_epf <- lc480_data_sample %>%
         title = paste0(unique(.$plate_number), " ", unique(.$assay))
     )
 
+plate1_MiFish_epf
+
 #Plate 2 MiFish
 plate2_MiFish_epf <- lc480_data_sample %>%
     filter(plate_number == "Plate2" & assay == "MiFish") %>%
@@ -103,7 +109,7 @@ plate2_MiFish_epf <- lc480_data_sample %>%
         title = paste0(unique(.$plate_number), " ", unique(.$assay))
     )
 
-
+plate2_MiFish_epf
 
 # identify failed reactions using minimum EPF of 3
 # (for real samples only, criteria not applied to
@@ -187,7 +193,7 @@ plate1_16S_clean <- clean_lc480_data %>%
         title = paste0(unique(.$plate_number), " ", unique(.$assay), " Clean"),
     )
 
-
+plate1_16S_clean
 
 #Plate 2 16S clean
 plate2_16S_clean <- clean_lc480_data %>%
@@ -200,6 +206,7 @@ plate2_16S_clean <- clean_lc480_data %>%
         title = paste0(unique(.$plate_number), " ", unique(.$assay), " Clean"),
     )
 
+plate2_16S_clean
 
 #Plate 1 MiFish clean
 plate1_MiFish_clean <- clean_lc480_data %>%
@@ -212,6 +219,8 @@ plate1_MiFish_clean <- clean_lc480_data %>%
         title = paste0(unique(.$plate_number), " ", unique(.$assay), " Clean"),
     )
 
+plate1_MiFish_clean
+
 #Plate 2 MiFish clean
 plate2_MiFish_clean <- clean_lc480_data %>%
     filter(plate_number == "Plate2", assay == "MiFish") %>%
@@ -223,13 +232,12 @@ plate2_MiFish_clean <- clean_lc480_data %>%
         title = paste0(unique(.$plate_number), " ", unique(.$assay), " Clean"),
     )
 
+plate2_MiFish_clean
+
 # Instead of the old way, lets just produce pdfs of all the plots
 #clean_lc480_data %>%
     #filter(plate_number == "Plate2", assay == "MiFish") %>%
     #plate_pdf(plate_width, plate_height, paste0("Plate2", "_plot_", "MiFish", ".pdf"))
-
-
-
 
 
 # summary EPF samples and controls (at this point is still includes failed replicates - this is ok, as they are filtered later)
@@ -467,9 +475,9 @@ minipool_all %>%
 
 #library_summary %>%
 
-cbind(library_summary) %>%
-    mutate(lib_vol_ul = volume_sums,
-    bead_vol_ul = volume_beads,
-    total_vol_ul = lib_vol_ul + bead_vol_ul)
+# cbind(library_summary) %>%
+ #   mutate(lib_vol_ul = volume_sums,
+ #   bead_vol_ul = volume_beads,
+ #   total_vol_ul = lib_vol_ul + bead_vol_ul)
 
 #confirm total volumes are all <1.5 mL
