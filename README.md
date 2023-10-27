@@ -9,12 +9,6 @@ install.packages("readxl")
 install.packages("openxlsx")
 ```
 
-### This doesn't work yet because it's a private repo
-```
-library(devtools)
-install_github("MarcieAyad/qPCR_setup_pooling")
-```
-
 ## meta_to_plates() function
 ### Running meta_to_plates()
 This is the minimum arguments required to run the meta_to_plates() function:
@@ -88,9 +82,63 @@ The output Excel file will have four sheets; `plates`, `big_plates`, `metadata`,
 - `position_df`: This will have your samples duplicated for each replicate in the big plates. This sheet is needed for the `plates_to_pooling()` function.
 
 ## plates_to_pooling() function
-Not finished yet
-
 ### Running plates_to_pooling()
+This is the minimum arguments required to run the plates_to_pooling() function:
+```
+input_file <- "path/to/results.xlsx"
+qpcr_dir   <- "path/to/qPCR_data"
+output_dir <- "path/to/output_dir"
+
+plates_to_pooling(
+    input_file,
+    qpcr_dir,
+    output_dir
+)
+```
+
+This is all the arguments that can be used when running the plates_to_pooing() function:
+```
+input_file   <- "path/to/results.xlsx"
+qpcr_dir     <- "path/to/qPCR_data"
+output_dir   <- "path/to/output_dir"
+plate_width  <- 12
+plate_height <- 8
+
+plates_to_pooling(
+    input_file,
+    qpcr_dir,
+    output_dir,
+    plate_width,
+    plate_height
+)
+```
+
 ### plates_to_pooling() arguments
+- `input_file`: A path to the Excel file that was the output of the meta_to_plates() function.
+- `qpcr_dir`: Directory with qPCR data. Filenames should be in a specific format mentioned below.
+- `output_dir`: Directory where you would like all output files. The output files are explained in more detail below.
+- `plate_width`: The number of columns per plate. Default = 12. This should be the same value you used in meta_to_plates().
+- `plate_height`: The number of rows per plate. Default = 8. Max allowed = 13. This should be the same value you used in meta_to_plates().
+
 ### plates_to_pooling() input
+- `input_file`: This is the output file from the meta_to_plates() function. An example can be viewed at `test_data/results.xlsx`
+- `qpcr_dir`: An example of the qpcr directory can be viewed at `test_data/qPCR_test_data`
+  - Each file in the qPCR directory should have names that end in `_$assay_$plate.txt`. An example name would be `20230901_Extraction_16S_Plate1.txt`. 
+  - These txt files should be tab seperated files with the columns `Experiment_name`, `Position`, `Sample`, and `EPF`.
+
 ### plates_to_pooling() output
+The output directory will contain three .csv files and multiple .pdf files.
+
+- `reps_to_discard.csv`: This file has information on replicates that have been flaged for discarding.
+  - `assay`: This column will have the assay of the discard replicate.
+  - `plate_number`: The plate number of the discard replicate.
+  - `pos`: The position on the plate of the discard replicate.
+  - `sample_replicate`: The sample number and the replicate number of the discard replicate.
+  - `discard`: The flag DISCARD.
+
+- `biomek_pooling_workbook.csv` &
+- `biomek_pooling_workbook_mamaaaaa.csv`: I currently don't understand the differernce between these files.
+
+- `raw_$assay_$plate.pdf`: Plate plots before cleaning.
+
+- `clean_$assay_$plate.pdf`: Plate plots after cleaning.
