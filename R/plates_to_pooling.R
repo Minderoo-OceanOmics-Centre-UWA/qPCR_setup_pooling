@@ -75,8 +75,6 @@ plates_to_pooling <- function(input_file,
         left_join(., position_df, by = c("plate_number_pos", "assay")) %>%
         filter(., replicate != "pool")
 
-    # TO DO: dont hardcode plate size
-
     ##### visualise EPF data in a heatmap ####
     prefix <- "raw"
     export_plate_pdfs(
