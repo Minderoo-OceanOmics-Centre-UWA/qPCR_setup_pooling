@@ -6,9 +6,9 @@ source("R/reformat_meta_df.R")
 source("R/create_position_df.R")
 source("R/get_plate_dfs.R")
 source("R/export_plates_to_excel.R")
-library(tidyverse)
-library(readxl)
-library(openxlsx)
+suppressMessages(library(tidyverse))
+suppressMessages(library(readxl))
+suppressMessages(library(openxlsx))
 
 meta_to_plates <- function(input_file,
                            output_file,
@@ -82,7 +82,7 @@ meta_to_plates <- function(input_file,
         possible_rv_counts
     )
 
-    meta_df     <- reformat_meta_df(
+    meta_df <- reformat_meta_df(
         meta_df,
         index_df,
         assays,
