@@ -115,22 +115,22 @@ plate2_MiFish_epf
 # (for real samples only, criteria not applied to
 # controls as these are all taken through to sequencing )
 rep_failed <- lc480_data_sample %>%
-    mutate(
-        discard = case_when(
-            replicate == "pool" ~ "NA",
-            sample_type == "sample" & EPF <= 3 ~ "DISCARD",
-            TRUE ~ "KEEP"
-        )
-    ) %>%
-    arrange(sample_order(sample))
+  mutate(discard_rep = case_when(
+    sample_type == "sample" & EPF <= 2 ~ "DISCARD_REP",
+    TRUE ~ "KEEP_REP")) %>%
+  mutate(assay_sample_id = paste(assay, Sample, sep = ".")) %>%
+  dplyr::arrange(assay, Sample) 
+
 
 # summary of number of reps to be discarded per sample
 rep_failed_summary <- rep_failed %>%
     filter(replicate != "pool") %>%
-    dplyr::group_by(sample, assay) %>%
-    dplyr::summarise(count_discard = sum(discard == "DISCARD")) %>%
+    dplyr::group_by(assay, Sample) %>%
+    dplyr::summarise(count_discard = sum(discard_rep == "DISCARD_REP")) %>%
     ungroup() %>%
-    arrange(sample_order(sample))
+    dplyr::arrange(assay, Sample)
+rep_failed_summary
+
 
 # identify the total number of samples per assay with replicates to be discarded 
 #16S
@@ -140,12 +140,12 @@ cat(
         filter(assay == "16S", count_discard == 1) %>%
         n_distinct()
     ),
-    " samples in 16S assay with 1 replicate to be discarded\n",
+    " samples in 16S assay with 1 replicate to be discarded, to be removed from plate manually\n",
     "There are ",
     (rep_failed_summary %>%
         filter(assay == "16S", count_discard >= 2) %>%
         n_distinct()),
-    " samples in 16S assay with 2 or more failed replicates\n"
+    " samples in 16S assay with 2 or more failed replicates, cannot be used for sequencing \n"
 )
 
 #MiFish
@@ -165,23 +165,43 @@ cat("There are ",
 #identify samples to be completely removed from pool (DISCARD >= 2)
 
 discarded_samples <- rep_failed_summary %>%
-    filter(count_discard >= 2)
-discarded_samples %>%
-    arrange(sample)
+    filter(count_discard >= 2) %>%
+    mutate(assay_sample_id = paste(assay, Sample, sep = "."),
+         action = "DISCARD_SAMPLE") %>%
+    dplyr::select(assay_sample_id, action)
+    discarded_samples
 
-# export table for manual removal of failed replicates from 384-well plates
 
-rep_failed %>%
-    dplyr::select(assay, plate_number, pos, sample_replicate, discard) %>%
-    filter(discard == "DISCARD") %>%
-    arrange(plate_number, sample_order(pos)) %>%
-    write_csv("reps_to_discard.csv")
-
-# visualise plates with failed replicates/samples removed - for sanity check :)
-
-clean_lc480_data <- rep_failed %>%
-    filter(discard == "KEEP")
-
+    # flag those failed samples that should be removed from experiment
+  rep_failed_export <- rep_failed %>%
+      left_join(., discarded_samples, by = "assay_sample_id")
+    
+    
+  rep_failed_export <- rep_failed_export %>%
+      mutate(action = ifelse(is.na(action),"KEEP_SAMPLE", action),
+             discard_sample = action)
+    
+    # list of samples that will be discarded - replicates can still be pooled, no need to manually remove these
+    samples_to_discard <- rep_failed_export %>%
+      filter(assay == "16S", discard_sample == "DISCARD_SAMPLE") %>%
+      arrange(plate_number, sample_order(pos))
+    length(unique(samples_to_discard$sample_id))
+    
+    # export table for manual removal of failed replicates from 384-well plates
+    reps_to_discard <- rep_failed_export %>%
+      filter(assay == "16S", discard_sample == "KEEP_SAMPLE", discard_rep == "DISCARD_REP") %>%
+      arrange(plate_number, sample_order(pos)) %>%
+      dplyr::select(assay, plate_number, sample_replicate, pos) %>%
+      write_csv("reps_to_discard.csv")
+    
+    length(unique(reps_to_discard$sample_replicate))
+    
+    # visualise cleaned plates - for sanity check :)
+    clean_lc480_data <- rep_failed_export %>%
+      filter(discard_sample == "KEEP_SAMPLE",
+             discard_rep == "KEEP_REP") 
+    
+    
 #Plate 1 16S Clean
 plate1_16S_clean <- clean_lc480_data %>%
     filter(plate_number == "Plate1", assay == "16S") %>%
@@ -295,14 +315,26 @@ minipool_overview$n_groups <- ifelse(
     minipool_overview$n_groups
 )
 
-# Summary of EPF values for actual samples and controls for each plate
-# Where n_groups = the number of minipools each with a range of 0.5 EPF
-# minipool_overview <- position_df_pool %>%
-# group_by(plate_number, sample_type) %>%
-# dplyr::summarise(min =  min(mean), max = max(mean),
-# diff_mean = max(mean) - min(mean),
-# n_groups = round((max(mean) - min(mean))/0.5, digits = 0))
-# minipool_overview
+# generate supporting table containing number of samples/controls per minipool plus expected volume per minipool
+minipool_overview
+minipool_overview_df <- minipool_overview %>%
+  ungroup() %>%
+  mutate(assay.plate_number.sample_type = paste(assay, plate_number, sample_type, sep = ".")) %>%
+  dplyr::select(assay.plate_number.sample_type, count_samples)
+
+# volume included in this list minipool_calc_vols
+minipool_calc_vols_df <- do.call(rbind.data.frame, minipool_calc_vols)
+minipool_calc_vols_df_summary <- minipool_calc_vols_df %>%
+  group_by(assay, plate_number, sample_type, DestinationWell) %>%
+  dplyr::summarise(total_vol_ul = sum(vol_ul)) %>%
+  ungroup() %>%
+  mutate(assay.plate_number.sample_type = paste(assay, plate_number, sample_type, sep = "."))
+
+minipool_calc_vols_df_summary_print <- minipool_calc_vols_df_summary %>%
+  left_join(minipool_overview_df, by = "assay.plate_number.sample_type") %>%
+  dplyr::select(-assay.plate_number.sample_type) %>%
+  write.csv("minipool_overview.csv", row.names = FALSE)
+
 
 # Set theme for plots
 theme_set(theme_bw() +
@@ -320,7 +352,6 @@ theme_set(theme_bw() +
 
 pooling_df <- data.frame()
 
-
 #identify variable for loop below
 minipool_calcs     <- list()
 volume_ranges      <- list()
@@ -330,6 +361,7 @@ volume_sums        <- c()
 volume_beads       <- c()
 plate_num          <- 0
 out_df             <- data.frame(
+  assay_plateNumber=NULL,
     assay=NULL,
     SourcePosition=NULL,
     SourceWell=NULL,
@@ -410,13 +442,6 @@ for (curr_assay in unique(position_df_pool$assay)) {
                 data.frame() %>%
                 list()
 
-            # volume_sums  <-
-            # append(volume_sums,
-            # sum(minipool_calc_vols[curr_key][[1]]$vol_ul))
-            # volume_beads <-
-            # append(volume_beads,
-            # (1.8 * sum(minipool_calc_vols[curr_key][[1]]$vol_ul)))
-
             # check "minipools" in a plot to confirm group/volume allocation
             minipool_plots[curr_key] <- ggplot(
                     minipool_calc_vols[curr_key][[1]],
@@ -436,8 +461,10 @@ for (curr_assay in unique(position_df_pool$assay)) {
                 minipool_calc_vols[plate_keys[1]][[1]],
                 minipool_calc_vols[plate_keys[2]][[1]]
             ) %>%
-            mutate(SourcePosition = sourcepos) %>%
+        mutate(SourcePosition = sourcepos,
+        assay_plateNumber = paste(assay, plate_number, sep = ".")) %>% 
             dplyr::select(
+                assay_plateNumber,
                 assay,
                 SourcePosition,
                 SourceWell = pos,
@@ -445,8 +472,7 @@ for (curr_assay in unique(position_df_pool$assay)) {
                 DestinationPosition,
                 DestinationWell
             ) %>%
-            arrange(sample_order(SourceWell)) #%>%
-            #write_csv(paste0("biomek_pooling_workbook_", curr_assay, plate,".csv"))
+            arrange(sample_order(SourceWell))
 
         out_df <- rbind(out_df, tmp_df)
     }
@@ -454,30 +480,11 @@ for (curr_assay in unique(position_df_pool$assay)) {
 }
 write_csv(out_df, "biomek_pooling_workbook.csv")
 
-# minipool_all <- minipool_calc_vols %>%
-#    bind_rows(.id = 'MAMAAAAA') 
-# minipool_all %>%
-#    mutate(SourcePosition = pos) %>%
-#    dplyr::select(SourcePosition,
-#        SourceWell = pos, 
-#        Volume = vol_ul, 
-#        DestinationPosition, DestinationWell) |> 
-#    write_csv(paste0("biomek_pooling_workbook_", exp_name,".csv"))
-    #View()
 
-#minipool_plots["16S_Plate1_sample"][[1]]
-#minipool_plots["16S_Plate1_control"][[1]]
+minipool_plots["16S_Plate1_sample"][[1]]
+minipool_plots["16S_Plate1_control"][[1]]
 #minipool_plots["COI_Plate1_sample"][[1]]
 #minipool_plots["COI_Plate1_control"][[1]]
 
 
-#library summary with volumes of sample/controls and volume of beads to add for cleanup (1.8 x volume)
 
-#library_summary %>%
-
-# cbind(library_summary) %>%
- #   mutate(lib_vol_ul = volume_sums,
- #   bead_vol_ul = volume_beads,
- #   total_vol_ul = lib_vol_ul + bead_vol_ul)
-
-#confirm total volumes are all <1.5 mL
