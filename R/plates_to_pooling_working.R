@@ -322,19 +322,6 @@ minipool_overview_df <- minipool_overview %>%
   mutate(assay.plate_number.sample_type = paste(assay, plate_number, sample_type, sep = ".")) %>%
   dplyr::select(assay.plate_number.sample_type, count_samples)
 
-# volume included in this list minipool_calc_vols
-minipool_calc_vols_df <- do.call(rbind.data.frame, minipool_calc_vols)
-minipool_calc_vols_df_summary <- minipool_calc_vols_df %>%
-  group_by(assay, plate_number, sample_type, DestinationWell) %>%
-  dplyr::summarise(total_vol_ul = sum(vol_ul)) %>%
-  ungroup() %>%
-  mutate(assay.plate_number.sample_type = paste(assay, plate_number, sample_type, sep = "."))
-
-minipool_calc_vols_df_summary_print <- minipool_calc_vols_df_summary %>%
-  left_join(minipool_overview_df, by = "assay.plate_number.sample_type") %>%
-  dplyr::select(-assay.plate_number.sample_type) %>%
-  write.csv("minipool_overview.csv", row.names = FALSE)
-
 
 # Set theme for plots
 theme_set(theme_bw() +
@@ -443,7 +430,7 @@ for (curr_assay in unique(position_df_pool$assay)) {
                 list()
 
             # check "minipools" in a plot to confirm group/volume allocation
-            minipool_plots[curr_key] <- ggplot(
+            minipool_plots[[curr_key]] <- ggplot(
                     minipool_calc_vols[curr_key][[1]],
                     aes(x = sample_replicate, y = mean)
                 ) +
@@ -486,5 +473,18 @@ minipool_plots["16S_Plate1_control"][[1]]
 #minipool_plots["COI_Plate1_sample"][[1]]
 #minipool_plots["COI_Plate1_control"][[1]]
 
+#  Calculate the volume of each pool and the in this list minipool_calc_vols
+minipool_calc_vols_df <- do.call(rbind.data.frame, minipool_calc_vols)
 
+minipool_calc_vols_df_summary <- minipool_calc_vols_df %>%
+  group_by(assay, plate_number, sample_type, DestinationWell) %>%
+  dplyr::summarise(total_vol_ul = sum(vol_ul)) %>%
+  ungroup() %>%
+  mutate(assay.plate_number.sample_type = paste(assay, plate_number, sample_type, sep = "."))
+
+minipool_calc_vols_df_summary_print <- minipool_calc_vols_df_summary %>%
+  left_join(minipool_overview_df, by = "assay.plate_number.sample_type") %>%
+  dplyr::select(-assay.plate_number.sample_type) %>%
+  mutate()
+  write.csv("minipool_overview.csv", row.names = FALSE)
 
