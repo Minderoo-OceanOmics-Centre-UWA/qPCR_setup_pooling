@@ -12,6 +12,7 @@ create_position_df <- function(meta_df,
     # the samples to the big plate positions
     position_df                           <- meta_df[, c("SAMPLEID", "ASSAY")]
     colnames(position_df)[colnames(position_df) == "SAMPLEID"] <- "sample_id"
+    colnames(position_df)[colnames(position_df) == "ASSAY"] <- "assay"
     position_df["Pos"]                    <- NULL
     position_df["sample_replicate"]       <- NULL
     position_df["replicate"]              <- NULL
