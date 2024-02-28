@@ -72,7 +72,7 @@ create_position_df <- function(meta_df,
                 pos_row <- which(
                     position_df$sample_id == curr_sample &
                     position_df$replicate == replicate &
-                    position_df$ASSAY == assay
+                    position_df$assay == assay
                 )
                 position_df[pos_row, "Pos"] <- well
                 position_df[pos_row, "sample_replicate"] <- paste0(
