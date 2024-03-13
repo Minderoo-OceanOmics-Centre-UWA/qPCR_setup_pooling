@@ -58,8 +58,8 @@ reformat_meta_df <- function(meta_df,
     row.names(meta_df) <- NULL
 
     # Get vectors of the primers
-    fw_primers <- c(index_df[index_df$FWRV == "FW", "PRIMERNUM"][1:fw_count])
-    rv_primers <- c(index_df[index_df$FWRV == "RV", "PRIMERNUM"][1:rv_count])
+    fw_primers <- c(index_df[index_df$FWRV == "FW" & index_df$ASSAY == assays[1], "PRIMERNUM"][1:fw_count])
+    rv_primers <- c(index_df[index_df$FWRV == "RV" & index_df$ASSAY == assays[1], "PRIMERNUM"][1:rv_count])
 
     if (length(fw_primers) < fw_count) {
         stop(
@@ -92,6 +92,10 @@ reformat_meta_df <- function(meta_df,
     }
 
     for (assay in assays) {
+        # Get vectors of the primers
+        fw_primers <- c(index_df[index_df$FWRV == "FW" & index_df$ASSAY == assay, "PRIMERNUM"][1:fw_count])
+        rv_primers <- c(index_df[index_df$FWRV == "RV" & index_df$ASSAY == assay, "PRIMERNUM"][1:rv_count])
+      
         # `plate_count_per_fws` and `curr_fw_plate_count`
         # are used to track the number of plates per fw primer
         # We are tracking this because we increment the rv primer
@@ -112,6 +116,7 @@ reformat_meta_df <- function(meta_df,
             # We refresh the `well_col` for a new plate
             # It increases for each fw primer
             well_col <- 0
+  
             for (fw in fw_primers[fw_left:fw_right]) {
                 well_row_index <- 0
                 well_col       <- well_col + 1
@@ -188,7 +193,6 @@ reformat_meta_df <- function(meta_df,
                             nchar(meta_df[meta_row, "RV_FULL_SEQ"])
                         )
                     }
-
                 }
                 # Stop looping through fw primers. We ran out of samples.
                 if (stop) {
