@@ -47,6 +47,7 @@ get_possible_counts <- function(sample_ids,
         if (curr_rv_count < max_rv_count) {
             curr_rv_count       <- curr_rv_count + plate_height
             plate_count_per_fws <- plate_count_per_fws + 1
+            curr_fw_plate_count <- curr_fw_plate_count + 1
 
         # We ran out of rv primers
         } else {
