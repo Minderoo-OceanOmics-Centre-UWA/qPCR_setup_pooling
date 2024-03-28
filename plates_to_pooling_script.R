@@ -410,7 +410,7 @@ for (plate in plate_numbers) {
   }
 }
 if (length(missing_plates) > 0) {
-  print("qPCR data is missing plates: ")
+  print("qPCR data directory is missing plates: ")
   print(missing_plates)
   stop()
 }
