@@ -401,6 +401,19 @@ plate_numbers  <- unique(position_df$plate_number)
 assays         <- unique(position_df$assay)
   
 all_lc480_data <- ldply(fnames, read_qPCR_data, assays, plate_numbers)
+
+# Make sure qPCR data isn't missing any plates
+missing_plates <- c()
+for (plate in plate_numbers) {
+  if (! plate %in% unique(all_lc480_data$plate_number)) {
+    missing_plates <- c(missing_plates, plate)
+  }
+}
+if (length(missing_plates) > 0) {
+  print("qPCR data is missing plates: ")
+  print(missing_plates)
+  stop()
+}
   
 lc480_data_sample <- all_lc480_data %>%
   mutate(plate_number_pos = paste(plate_number, Position, sep = ".")) %>%
