@@ -23,6 +23,13 @@ meta_to_plates <- function(input_file,
     meta_df  <- import_meta_df(input_file, run)
     index_df <- import_index_df(input_file, assays)
 
+    # Remove invisible columns in Excel
+    meta_df  <- meta_df %>% select(-contains("..."))
+    # Remove control samples that shouldn't be in the input metadata
+    for (control in controls) {
+        meta_df <- meta_df[!grepl(control, meta_df$SAMPLEID),]
+    }
+
     # Get sample ids
     sample_ids <- meta_df$SAMPLEID
 
