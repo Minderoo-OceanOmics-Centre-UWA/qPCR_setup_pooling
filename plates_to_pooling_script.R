@@ -104,8 +104,8 @@ export_plate_pdfs <- function(df,
         filter(plate_number == curr_plate & assay == curr_assay) %>%
         plate_plot(
           position = pos,
-          value = EPF,
-          label = round(EPF, digits = 1),
+          value = epf,
+          label = round(epf, digits = 1),
           plate_size = (plate_width * 2) * (plate_height * 2),
           title = paste0(unique(.$plate_number), " ", unique(.$assay))
         )
@@ -260,21 +260,6 @@ export_biomek_pooling_workbook <- function(assays,
   }
   write_csv(out_df, paste0(output_dir, "/biomek_pooling_workbook.csv"))
   
-  minipool_all <- minipool_calc_vols %>%
-    bind_rows(.id = "MAMAAAAA")
-  minipool_all %>%
-    mutate(SourcePosition = pos) %>%
-    dplyr::select(SourcePosition,
-                  SourceWell = pos,
-                  Volume = vol_ul,
-                  DestinationPosition, DestinationWell) |>
-    write_csv(
-      paste0(
-        output_dir,
-        "/biomek_pooling_workbook_mamaaaaa.csv"
-      )
-    )
-  
   print(paste0("Finished! Output files in: ", output_dir))
 }
 
@@ -307,6 +292,21 @@ print_failed_rep_message <- function(rep_failed_summary, assays) {
   cat("\n\n")
 }
 
+change_lc480_colnames <- function(lc480) {
+  colnames(lc480) <- toupper(colnames(lc480))
+  colnames(lc480)[which(names(lc480) == "EXPERIMENT_NAME")] <- "experiment_name"
+  colnames(lc480)[which(names(lc480) == "POSITION")] <- "position"
+  colnames(lc480)[which(names(lc480) == "SAMPLE")] <- "sample"
+  colnames(lc480)[which(names(lc480) == "EPF")] <- "epf"
+  colnames(lc480)[which(names(lc480) == "CP")] <- "cp"
+  colnames(lc480)[which(names(lc480) == "TM1")] <- "tm1"
+  colnames(lc480)[which(names(lc480) == "TM2")] <- "tm2"
+  colnames(lc480)[which(names(lc480) == "FILENAME")] <- "filename"
+  colnames(lc480)[which(names(lc480) == "ASSAY")] <- "assay"
+  colnames(lc480)[which(names(lc480) == "PLATE_NUMBER")] <- "plate_number"
+  return(lc480)
+}
+
 import_position_df <- function(excel_file) {
   excel_sheets   <- excel_sheets(excel_file)
   position_sheet <- grep(
@@ -327,26 +327,42 @@ import_position_df <- function(excel_file) {
   # Import df
   position_df   <- read_excel(excel_file, sheet = "position_df") %>%
     as.data.frame()
+  colnames(position_df) <- toupper(colnames(position_df))
   
   # Validata columns
-  if (!("assay" %in% colnames(position_df))) {
+  if (!("ASSAY" %in% colnames(position_df))) {
     stop("Sheet 'position_df' must contain an 'assay' column")
+  } else {
+    colnames(position_df)[which(names(position_df) == "ASSAY")] <- "assay"
   }
-  if (!("plate_number" %in% colnames(position_df))) {
+  if (!("PLATE_NUMBER" %in% colnames(position_df))) {
     stop("Sheet 'position_df' must contain a 'plate_number' column")
+  } else {
+    colnames(position_df)[which(names(position_df) == "PLATE_NUMBER")] <- "plate_number"
   }
-  if (!("plate_number_pos" %in% colnames(position_df))) {
+  if (!("PLATE_NUMBER_POS" %in% colnames(position_df))) {
     stop("Sheet 'position_df' must contain a 'plate_number_pos' column")
+  } else {
+    colnames(position_df)[which(names(position_df) == "PLATE_NUMBER_POS")] <- "plate_number_pos"
   }
-  if (!("replicate" %in% colnames(position_df))) {
+  if (!("REPLICATE" %in% colnames(position_df))) {
     stop("Sheet 'position_df' must contain a 'replicate' column")
+  } else {
+    colnames(position_df)[which(names(position_df) == "REPLICATE")] <- "replicate"
   }
-  if (!("sample_replicate" %in% colnames(position_df))) {
+  if (!("SAMPLE_REPLICATE" %in% colnames(position_df))) {
     stop("Sheet 'position_df' must contain a 'sample_replicate' column")
+  } else {
+    colnames(position_df)[which(names(position_df) == "SAMPLE_REPLICATE")] <- "sample_replicate"
   }
-  if (!("sample_type" %in% colnames(position_df))) {
+  if (!("SAMPLE_TYPE" %in% colnames(position_df))) {
     stop("Sheet 'position_df' must contain a 'sample_type' column")
+  } else {
+    colnames(position_df)[which(names(position_df) == "SAMPLE_TYPE")] <- "sample_type"
   }
+  colnames(position_df)[which(names(position_df) == "SAMPLE_ID")] <- "sample_id"
+  colnames(position_df)[which(names(position_df) == "POS")] <- "pos"
+  colnames(position_df)[which(names(position_df) == "ASSAY_PLATE_NUMBER_POS")] <- "assay_plate_number_pos"
   
   return(position_df)
 }
@@ -401,6 +417,9 @@ plate_numbers  <- unique(position_df$plate_number)
 assays         <- unique(position_df$assay)
   
 all_lc480_data <- ldply(fnames, read_qPCR_data, assays, plate_numbers)
+all_lc480_data <- change_lc480_colnames(all_lc480_data)
+all_lc480_data$sample <- str_replace(all_lc480_data$sampl, "Sample", "")
+all_lc480_data$sample <- trimws(all_lc480_data$sample)
 
 # Make sure qPCR data isn't missing any plates
 missing_plates <- c()
@@ -416,8 +435,8 @@ if (length(missing_plates) > 0) {
 }
   
 lc480_data_sample <- all_lc480_data %>%
-  mutate(plate_number_pos = paste(plate_number, Position, sep = ".")) %>%
-  dplyr::select(-Position, -plate_number) %>%
+  mutate(plate_number_pos = paste(plate_number, position, sep = ".")) %>%
+  dplyr::select(-position, -plate_number) %>%
   left_join(., position_df, by = c("plate_number_pos", "assay")) %>%
   filter(., replicate != "pool")
   
@@ -432,19 +451,66 @@ export_plate_pdfs(
   plate_width,
   plate_height
 )
+# Let's look at one of those plots in R studio
+plate_plot_epf <- lc480_data_sample %>%
+  filter(plate_number == "Plate1" & assay == "16S") %>%
+  plate_plot(
+    position = pos,
+    value = epf,
+    label = round(epf, digits = 1),
+    plate_size = (plate_width * 2) * (plate_height * 2),
+    title = paste0(unique(.$plate_number), " ", unique(.$assay))
+  )
+print(plate_plot_epf)
   
-# identify failed reactions using minimum EPF of 3
+# identify failed reactions using minimum EPF of 3 and maximum cp of 40
 # (for real samples only, criteria not applied to
 # controls as these are all taken through to sequencing )
 rep_failed <- lc480_data_sample %>%
   mutate(
     discard = case_when(
       replicate == "pool" ~ "NA",
-      sample_type == "sample" & EPF <= 3 ~ "DISCARD",
+      (sample_type == "sample" & epf < 3) | (sample_type == "sample" & cp > 40) ~ "DISCARD",
       TRUE ~ "KEEP"
     )
   ) %>%
   arrange(sample_order(sample))
+
+# Flag samples with epf between 3 and 6
+rep_failed <- rep_failed %>%
+  mutate(
+    epf_3_to_6 = case_when(
+      (sample_type == "sample" & epf >= 3) & (sample_type == "sample" & epf <= 6) ~ TRUE,
+      TRUE ~ FALSE
+    )
+  ) %>%
+  arrange(sample_order(sample))
+
+# Flag samples with tm1 outside of standard deviation
+plates <- unique(rep_failed$plate_number)
+rep_failed$tm1_sd         <- NA
+rep_failed$tm1_mean       <- NA
+rep_failed$tm1_outside_sd <- NA
+for (curr_assay in assays) {
+  for (curr_plate in plates) {
+    tm1s       <- rep_failed[rep_failed$assay == curr_assay & rep_failed$plate_number == curr_plate, "tm1"]
+    tm1_sd     <- sd(tm1s)
+    tm1_mean   <- mean(tm1s)
+    tm1_min    <- tm1_mean - tm1_sd
+    tm1_max    <- tm1_mean + tm1_sd
+    rep_failed[rep_failed$assay == curr_assay & rep_failed$plate_number == curr_plate, "tm1_sd"]   <- sd(tm1s)
+    rep_failed[rep_failed$assay == curr_assay & rep_failed$plate_number == curr_plate, "tm1_mean"] <- mean(tm1s)
+
+    rep_failed[rep_failed$assay == curr_assay & rep_failed$plate_number == curr_plate, ] <- rep_failed[rep_failed$assay == curr_assay & rep_failed$plate_number == curr_plate, ] %>%
+      mutate(
+        tm1_outside_sd = case_when(
+          (tm1 < tm1_min | tm1 > tm1_max) ~ TRUE,
+          TRUE ~ FALSE
+        )
+      ) %>%
+      arrange(sample_order(sample))
+  }
+}
   
 # summary of number of reps to be discarded per sample
 rep_failed_summary <- rep_failed %>%
@@ -457,11 +523,37 @@ rep_failed_summary <- rep_failed %>%
 # identify the total number of samples per assay
 # with replicates to be discarded
 print_failed_rep_message(rep_failed_summary, assays)
-  
+
+# print the failed reps
+print(rep_failed[rep_failed$discard == "DISCARD", ])
+
+# print the reps with epf between 3 to 6
+print(rep_failed[rep_failed$epf_3_to_6 == TRUE, ])
+
+# print reps with tm1 outside of standard deviation
+# print the reps with epf between 3 to 6
+print(rep_failed[rep_failed$tm1_outside_sd == TRUE, ])
+
+######################################################
+# Manually remove reps
+######################################################
+# put your reps to remove in the reps_to_remove vector
+# The format is assay.plate.position
+# Example:
+# reps_to_remove <- c("16S.Plate1.A2", "MiFish.Plate1.A3", "MiFish.Plate1.B1")
+reps_to_remove <- c()
+rep_failed <- rep_failed %>%
+  mutate(
+    discard = case_when(
+      (discard == "DISCARD") | (discard == "KEEP" & assay_plate_number_pos %in% reps_to_remove) ~ "DISCARD",
+      TRUE ~ "KEEP"
+    )
+  ) %>%
+  arrange(sample_order(sample))
+
 #identify samples to be completely removed from pool (DISCARD >= 2)
 discarded_samples <- rep_failed_summary %>%
-  filter(count_discard >= 2)
-discarded_samples %>%
+  filter(count_discard >= 2) %>%
   arrange(sample)
   
 # export table for manual removal of failed replicates from 384-well plates
@@ -489,6 +581,17 @@ export_plate_pdfs(
   plate_width,
   plate_height
 )
+# Let's look at one of those plots in R studio
+clean_plate_plot_epf <- clean_lc480_data %>%
+  filter(plate_number == "Plate1" & assay == "16S") %>%
+  plate_plot(
+    position = pos,
+    value = epf,
+    label = round(epf, digits = 1),
+    plate_size = (plate_width * 2) * (plate_height * 2),
+    title = paste0(unique(.$plate_number), " ", unique(.$assay))
+  )
+print(clean_plate_plot_epf)
   
 # summary EPF samples and controls
 # (at this point is still includes failed replicates -
@@ -496,13 +599,13 @@ export_plate_pdfs(
 epf_cal <- rep_failed %>%
   dplyr::group_by(assay, sample, sample_type) %>%
   dplyr::summarise(
-    median = median(EPF, na.rm = TRUE),
-    mean = mean(EPF, na.rm = TRUE),
-    sd = sd(EPF, na.rm = TRUE),
-    min =  min(EPF),
-    max = max(EPF),
-    diff_epf = max(EPF) - min(EPF),
-    number_valid_reps = sum(EPF >= 3)) %>%
+    median = median(epf, na.rm = TRUE),
+    mean = mean(epf, na.rm = TRUE),
+    sd = sd(epf, na.rm = TRUE),
+    min =  min(epf),
+    max = max(epf),
+    diff_epf = max(epf) - min(epf),
+    number_valid_reps = sum(epf >= 3)) %>%
   arrange(sample_order(sample)) %>%
   ungroup()
   
@@ -543,7 +646,7 @@ position_df_pool <- position_df %>%
 minipool_overview <- position_df_pool %>%
   group_by(assay, plate_number, sample_type) %>%
   dplyr::summarise(
-    count_samples = n_distinct(sample),
+    count_samples = n_distinct(sample_id),
     min =  min(mean),
     max = max(mean),
     diff_mean = max(mean) - min(mean),
