@@ -1,9 +1,0 @@
-"assay","plate_number","sample_type","DestinationWell","total_vol_ul","count_samples"
-"16S","Plate1","control","B1",4.5,2
-"16S","Plate1","sample","A1",3232.5,94
-"16S","Plate2","control","B2",11.5,2
-"16S","Plate2","sample","A2",46.5,3
-"MiFish","Plate1","control","B3",4.5,2
-"MiFish","Plate1","sample","A3",1751,94
-"MiFish","Plate2","control","B4",9,2
-"MiFish","Plate2","sample","A4",25.5,3
