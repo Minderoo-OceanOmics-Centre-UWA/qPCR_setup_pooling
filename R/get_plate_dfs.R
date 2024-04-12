@@ -18,8 +18,8 @@ get_plate_dfs <- function(first_fw,
     sample_count <- length(sample_ids)
 
     # Get vectors of the primers
-    fw_primers <- c(index_df[index_df$FWRV == "FW", "PRIMERNUM"][1:fw_count])
-    rv_primers <- c(index_df[index_df$FWRV == "RV", "PRIMERNUM"][1:rv_count])
+    fw_primers <- c(index_df[index_df$FWRV == "FW" & index_df$ASSAY == assay, "PRIMERNUM"][1:fw_count])
+    rv_primers <- c(index_df[index_df$FWRV == "RV" & index_df$ASSAY == assay, "PRIMERNUM"][1:rv_count])
 
     plate     <- data.frame(
         matrix(

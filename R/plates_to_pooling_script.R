@@ -15,12 +15,11 @@ suppressMessages(library("ggplate"))
 # Variables
 ##########################################################
 
-input_file   <- "R/output/V09_V12_AB_plate_df.xlsx"
+input_file   <- "R/output/V09_V12_AB_df.xlsx"
 qpcr_dir     <- "R/input/qPCR_data/"
 output_dir   <- "R/output/"
 plate_width  <- 12
 plate_height <- 8
-
 
 ##########################################################
 # Functions
@@ -133,7 +132,7 @@ export_biomek_pooling_workbook <- function(assays,
   # create a blank dataframe to output loop data into
   pooling_df <- data.frame()
   
-  #identify variable for loop below
+  #identify variables for loop below
   minipool_calcs     <- list()
   volume_ranges      <- list()
   minipool_calc_vols <- list()
@@ -150,7 +149,7 @@ export_biomek_pooling_workbook <- function(assays,
     DestinationWell = NULL
   )
   
-  # for loop that will cycle through assays, plate numbers, and sample types
+  # Loop that will cycle through assays, plate numbers, and sample types
   for (curr_assay in assays) {
     subs <- position_df_pool |> filter(assay == curr_assay)
     for (curr_plate in sort(plate_numbers)) {
@@ -160,7 +159,7 @@ export_biomek_pooling_workbook <- function(assays,
         curr_key   <- paste0(curr_assay, "_", curr_plate, "_", sam_type)
         keys <- append(keys, curr_key)
         
-        # Minipool calculations per plate
+        # Minipool calculations per plate per assay
         
         sub_minipool <- minipool_overview |>
           filter(assay == curr_assay) |>
@@ -180,10 +179,7 @@ export_biomek_pooling_workbook <- function(assays,
           list()
         
         # add volume to pool as well as info on tube destination
-        # (Plate 1 = P16-A1 well/tube = samples
-        # and P16-B1 well/tube = controls,
-        # Plate 2 = P16-A2 well/tube = samples
-        # and P16-B2 well/tube = controls,)
+      
         volume_ranges[curr_key] <- tibble(
           miniPool_id = 1:minipool_overview$n_groups[
             minipool_overview$plate_number == curr_plate &
@@ -192,25 +188,26 @@ export_biomek_pooling_workbook <- function(assays,
           ],
           vol_ul = rev(
             seq(
-              from = 2,
-              by = 0.5,
+              from = 4,
+              by = 1,
               length.out = minipool_overview$n_groups[
                 minipool_overview$plate_number == curr_plate &
-                  minipool_overview$sample_type == sam_type &
-                  minipool_overview$assay == curr_assay
+                 minipool_overview$sample_type == sam_type &
+                 minipool_overview$assay == curr_assay
               ]
             )
           )
         ) %>%
           data.frame() %>%
           list()
-        
+        p_num <- substr(curr_plate, nchar(curr_plate), nchar(curr_plate))
+       
         if (sam_type == "sample") {
-          dwell <- paste0("A", curr_plate)
+          dwell <- paste0("A", p_num)
         } else {
-          dwell <- paste0("B", curr_plate)
+          dwell <- paste0("B", p_num)
         }
-        
+
         biomek_deck_pos <- 12 - plate_num
         sourcepos <- paste0("qPCRPlate-P", biomek_deck_pos)
         
@@ -220,7 +217,7 @@ export_biomek_pooling_workbook <- function(assays,
             .,
             volume_ranges[curr_key][[1]],
             by = "miniPool_id"
-          ) %>%
+         ) %>%
           mutate(
             DestinationPosition = "P16",
             DestinationWell = dwell
@@ -228,15 +225,19 @@ export_biomek_pooling_workbook <- function(assays,
           data.frame() %>%
           list()
         
-        # volume_sums  <-
-        # append(volume_sums,
-        # sum(minipool_calc_vols[curr_key][[1]]$vol_ul))
-        # volume_beads <-
-        # append(volume_beads,
-        # (1.8 * sum(minipool_calc_vols[curr_key][[1]]$vol_ul)))
-        
-        # check "minipools" in a plot to confirm group/volume allocation
-        minipool_plots[curr_key] <- ggplot(
+        # Set theme for plots
+        theme_set(theme_bw() +
+                    theme(
+                      panel.grid = element_blank(),
+                      axis.text = element_text(size = 12, colour = "black"),
+                      axis.title = element_text(size = 14, colour = "black"),
+                      strip.text = element_text(size = 12, colour = "black"),
+                      legend.position = "bottom",
+                      legend.text = element_text(size = 11, colour = "black")
+                    )
+        )
+        #  check "minipools" in a plot to confirm group/volume allocation
+        minipool_plots[[curr_key]] <- ggplot(
           minipool_calc_vols[curr_key][[1]],
           aes(x = sample_replicate, y = mean)
         ) +
@@ -245,33 +246,40 @@ export_biomek_pooling_workbook <- function(assays,
           xlab("Sample") +
           ylab("Mean EPF") +
           theme(axis.text.y = element_text(size = 5)) +
-          # scale_color_brewer("MiniPool ID", palette = "Paired") +
-          coord_flip() %>%
-          list()
-      }
-      
-      tmp_df <- rbind(
-        minipool_calc_vols[keys[1]][[1]],
-        minipool_calc_vols[keys[2]][[1]]
-      ) %>%
-        mutate(SourcePosition = sourcepos) %>%
-        dplyr::select(
-          assay,
-          SourcePosition,
-          SourceWell = pos,
-          Volume = vol_ul,
-          DestinationPosition,
-          DestinationWell
+          coord_flip()
+        
+        
+        tmp_df <- rbind(
+          minipool_calc_vols[keys[1]][[1]],
+          minipool_calc_vols[keys[2]][[1]]
         ) %>%
-        arrange(sample_order(SourceWell))
-      
-      out_df <- rbind(out_df, tmp_df)
+          mutate(SourcePosition = sourcepos) %>%
+          dplyr::select(
+            assay,
+            SourcePosition,
+            SourceWell = pos,
+            Volume = vol_ul,
+            DestinationPosition,
+            DestinationWell
+          ) %>%
+          arrange(sample_order(SourceWell))
+        
+        out_df <- rbind(out_df, tmp_df)
+        
+        pdf(paste0(output_dir, curr_key, "_minipool_plot.pdf"))
+        print(minipool_plots[curr_key])
+        dev.off()
+      }
     }
   }
   write_csv(out_df, paste0(output_dir, "/biomek_pooling_workbook.csv"))
   
   print(paste0("Finished! Output files in: ", output_dir))
+  
+  return(minipool_calc_vols)
 }
+
+
 
 print_failed_rep_message <- function(rep_failed_summary, assays) {
   cat("\n")
@@ -453,7 +461,7 @@ lc480_data_sample <- all_lc480_data %>%
 
 lc480_data_sample$sample <- lc480_data_sample$SAMPLE
   
-##### visualise EPF data in a heatmap ####
+# visualise EPF data in a heatmap
 prefix <- "raw"
 export_plate_pdfs(
   lc480_data_sample,
@@ -466,7 +474,7 @@ export_plate_pdfs(
 )
 # The plots are outputed into the output_dir specified as .pdf but let's look at one of those plots in R studio. 
 plate_plot_epf <- lc480_data_sample %>%
-  filter(plate_number == "Plate1" & assay == "16S") %>%
+  filter(plate_number == "Plate4" & assay == "MiFish") %>%
   plate_plot(
     position = pos,
     value = epf,
@@ -537,19 +545,20 @@ rep_failed_summary <- rep_failed %>%
 # with replicates to be discarded
 print_failed_rep_message(rep_failed_summary, assays)
 
-# print the failed reps
-print(rep_failed[rep_failed$discard == "DISCARD", ])
+# print the failed reps (reps where the epf < 3 and the Cp >40)
+discard_df <- print(rep_failed[rep_failed$discard == "DISCARD", ])
 
-# print the reps with epf between 3 to 6
+# print the reps with epf between 3 to 6  
 print(rep_failed[rep_failed$epf_3_to_6 == TRUE, ])
 
 # print reps with tm1 outside of standard deviation
 print(rep_failed[rep_failed$tm1_outside_sd == TRUE, ])
 
 
-
 # Print all the bad reps
-print(rep_failed[rep_failed$tm1_outside_sd == TRUE | rep_failed$epf_3_to_6 == TRUE | rep_failed$discard == "DISCARD", ])
+print(rep_failed[(rep_failed$tm1_outside_sd == TRUE | rep_failed$epf_3_to_6 == TRUE | rep_failed$discard == "DISCARD") & rep_failed$sample_type == "sample", ])
+write.csv(rep_failed[(rep_failed$tm1_outside_sd == TRUE | rep_failed$epf_3_to_6 == TRUE | rep_failed$discard == "DISCARD") & rep_failed$sample_type == "sample", ], paste0(output_dir, "rxns_to_check.csv"))
+
 
 ######################################################
 # Manually remove reps
@@ -574,15 +583,25 @@ discarded_samples <- rep_failed_summary %>%
   arrange(sample)
   
 # export table for manual removal of failed replicates from 384-well plates
-  
-rep_failed %>%
+## AB - can this please only include samples where 1 replicate needs to be discarded.
+# In cases where >1 rep is discarded
+reps_to_discard <- rep_failed %>%
   dplyr::select(assay, plate_number, pos, sample_replicate, discard) %>%
   filter(discard == "DISCARD") %>%
-  arrange(plate_number, sample_order(pos)) %>%
-  write_csv(paste0(output_dir, "/reps_to_discard.csv"))
+  arrange(plate_number, sample_order(pos))
+
+reps_to_discard$sample <- substr(reps_to_discard$sample_replicate, 1, nchar(reps_to_discard$sample_replicate)-2)
+#reps_to_discard        <- reps_to_discard[!duplicated(reps_to_discard$sample),]
+
+duplicated_rows <- duplicated(reps_to_discard[c("assay", "sample")]) | duplicated(reps_to_discard[c("assay", "sample")], fromLast = TRUE)
+
+# Keep only rows where the sample is not duplicated
+#reps_to_discard <- reps_to_discard[!duplicated_rows, ]
+reps_to_discard <- subset(reps_to_discard, !duplicated_rows)
+
+write_csv(reps_to_discard, paste0(output_dir, "/reps_to_discard.csv"))
   
-# visualise plates with failed replicates/samples removed -
-# for sanity check :)
+# visualise plates with failed replicates/samples removed
   
 clean_lc480_data <- rep_failed %>%
   filter(discard == "KEEP")
@@ -600,7 +619,7 @@ export_plate_pdfs(
 )
 # Let's look at one of those plots in R studio
 clean_plate_plot_epf <- clean_lc480_data %>%
-  filter(plate_number == "Plate1" & assay == "16S") %>%
+  filter(plate_number == "Plate5" & assay == "MiFish") %>%
   plate_plot(
     position = pos,
     value = epf,
@@ -652,217 +671,37 @@ position_df_pool <- position_df %>%
   left_join(epf_cal_mean, by = "assay_sample_replicate") %>%
   na.omit(position_df_pool$mean)
 
-#### Pooling the pooled samples per plate ####
-# fixed volume per plate won't work because of
-# potential big differences in number of samples per plate
-# using grouping of samples based on "minipool" approach (as used in the past)
-# "minipools" created based on 0.5 EPF difference
-# (this is assuming correct florescence values from LC480 where EPF = 15-20 )
-# number of actual samples and controls per plate
+
+##########################################################
+# Minipool Generation Calcs & Run output function
+##########################################################
+
+# These calculations use grouping of samples based on "minipool" approach 
+# For each plate 6 minipools are created for the samples
   
-minipool_overview <- position_df_pool %>%
+
+minipool_overview <-   position_df_pool %>%
   group_by(assay, plate_number, sample_type) %>%
   dplyr::summarise(
     count_samples = n_distinct(SAMPLE),
     min =  min(mean),
     max = max(mean),
     diff_mean = max(mean) - min(mean),
-    n_groups = round((max(mean) - min(mean)) / 0.5, digits = 0)
+    n_groups = 6
   )
-  
-minipool_overview$n_groups <- ifelse(
-  minipool_overview$n_groups < 2,
-  2,
-  minipool_overview$n_groups
-)
-  
-# Summary of EPF values for actual samples and controls for each plate
-# Where n_groups = the number of minipools each with a range of 0.5 EPF
-# minipool_overview <- position_df_pool %>%
-# group_by(plate_number, sample_type) %>%
-# dplyr::summarise(min =  min(mean), max = max(mean),
-# diff_mean = max(mean) - min(mean),
-# n_groups = round((max(mean) - min(mean))/0.5, digits = 0))
-# minipool_overview
-  
-# Set theme for plots
-theme_set(theme_bw() +
-            theme(
-              panel.grid = element_blank(),
-              axis.text = element_text(size = 12, colour = "black"),
-              axis.title = element_text(size = 14, colour = "black"),
-              strip.text = element_text(size = 12, colour = "black"),
-              legend.position = "bottom",
-              legend.text = element_text(size = 11, colour = "black")
-            )
-)
-  
-suppressWarnings(
-  export_biomek_pooling_workbook(
-    assays,
-    plate_numbers,
-    position_df_pool,
-    minipool_overview,
-    output_dir
-  )
-)
 
-# THIS DOESNT WORK YET
-assays,
-plate_numbers,
-position_df_pool,
-minipool_overview,
-output_dir
-# create a blank dataframe to output loop data into
-pooling_df <- data.frame()
+minipool_calc_vols <- export_biomek_pooling_workbook(assays, plate_numbers, position_df_pool, minipool_overview, output_dir)
 
-#identify variable for loop below
-minipool_calcs     <- list()
-volume_ranges      <- list()
-minipool_calc_vols <- list()
-minipool_plots     <- list()
-volume_sums        <- c()
-volume_beads       <- c()
-plate_num          <- 0
-out_df             <- data.frame(
-  assay = NULL,
-  SourcePosition = NULL,
-  SourceWell = NULL,
-  Volume = NULL,
-  DestinationPosition = NULL,
-  DestinationWell = NULL
-)
 
-# for loop that will cycle through assays, plate numbers, and sample types
-for (curr_assay in assays) {
-  subs <- position_df_pool |> filter(assay == curr_assay)
-  for (curr_plate in sort(plate_numbers)) {
-    plate_num <- plate_num + 1
-    keys <- c()
-    for (sam_type in unique(subs$sample_type)) {
-      curr_key   <- paste0(curr_assay, "_", curr_plate, "_", sam_type)
-      keys <- append(keys, curr_key)
-      
-      # Minipool calculations per plate
-      
-      sub_minipool <- minipool_overview |>
-        filter(assay == curr_assay) |>
-        filter(plate_number == curr_plate) |>
-        filter(sample_type == sam_type) |>
-        pull(n_groups)
-      
-      minipool_calcs[curr_key] <- subs %>%
-        filter(
-          plate_number == curr_plate &
-            sample_type == sam_type) %>%
-        mutate(miniPool = cut(mean,
-                              breaks = sub_minipool),
-               miniPool_id = as.integer(cut(mean,
-                                            breaks = sub_minipool))) %>%
-        data.frame() %>%
-        list()
-      
-      # add volume to pool as well as info on tube destination
-      # (Plate 1 = P16-A1 well/tube = samples
-      # and P16-B1 well/tube = controls,
-      # Plate 2 = P16-A2 well/tube = samples
-      # and P16-B2 well/tube = controls,)
-      volume_ranges[curr_key] <- tibble(
-        miniPool_id = 1:minipool_overview$n_groups[
-          minipool_overview$plate_number == curr_plate &
-            minipool_overview$sample_type == sam_type &
-            minipool_overview$assay == curr_assay
-        ],
-        vol_ul = rev(
-          seq(
-            from = 2,
-            by = 0.5,
-            length.out = minipool_overview$n_groups[
-              minipool_overview$plate_number == curr_plate &
-                minipool_overview$sample_type == sam_type &
-                minipool_overview$assay == curr_assay
-            ]
-          )
-        )
-      ) %>%
-        data.frame() %>%
-        list()
-      
-      if (sam_type == "sample") {
-        dwell <- paste0("A", curr_plate)
-      } else {
-        dwell <- paste0("B", curr_plate)
-      }
-      
-      biomek_deck_pos <- 12 - plate_num
-      sourcepos <- paste0("qPCRPlate-P", biomek_deck_pos)
-      
-      minipool_calc_vols[curr_key] <-
-        minipool_calcs[curr_key][[1]] %>%
-        left_join(
-          .,
-          volume_ranges[curr_key][[1]],
-          by = "miniPool_id"
-        ) %>%
-        mutate(
-          DestinationPosition = "P16",
-          DestinationWell = dwell
-        ) %>%
-        data.frame() %>%
-        list()
-      
-      # volume_sums  <-
-      # append(volume_sums,
-      # sum(minipool_calc_vols[curr_key][[1]]$vol_ul))
-      # volume_beads <-
-      # append(volume_beads,
-      # (1.8 * sum(minipool_calc_vols[curr_key][[1]]$vol_ul)))
-      
-      # check "minipools" in a plot to confirm group/volume allocation
-      minipool_plots[curr_key] <- ggplot(
-        minipool_calc_vols[curr_key][[1]],
-        aes(x = sample_replicate, y = mean)
-      ) +
-        geom_point(aes(colour = as.factor(miniPool_id)), size = 2) +
-        scale_y_continuous(expand = c(0,0)) +
-        xlab("Sample") +
-        ylab("Mean EPF") +
-        theme(axis.text.y = element_text(size = 5)) +
-        # scale_color_brewer("MiniPool ID", palette = "Paired") +
-        coord_flip() %>%
-        list()
-    }
-    
-    tmp_df <- rbind(
-      minipool_calc_vols[keys[1]][[1]],
-      minipool_calc_vols[keys[2]][[1]]
-    ) %>%
-      mutate(SourcePosition = sourcepos) %>%
-      dplyr::select(
-        assay,
-        SourcePosition,
-        SourceWell = pos,
-        Volume = vol_ul,
-        DestinationPosition,
-        DestinationWell
-      ) %>%
-      arrange(sample_order(SourceWell))
-    
-    out_df <- rbind(out_df, tmp_df)
-  }
-}
-write_csv(out_df, paste0(output_dir, "/biomek_pooling_workbook.csv"))
+# summary with volumes of sample/controls and volume of beads to add for cleanup (1.8 x volume)
 
-print(paste0("Finished! Output files in: ", output_dir))
-  
-#library summary with volumes of sample/controls and volume of beads to add for cleanup (1.8 x volume)
+minipool_vols_df <- do.call(rbind.data.frame, minipool_calc_vols)
+minipool_vols_summary <- minipool_vols_df %>%
+  group_by(assay, plate_number, sample_type, DestinationWell) %>%
+  dplyr::summarise(total_vol_ul = sum(vol_ul)) %>%
+  ungroup() %>%
+  mutate(assay.plate_number.sample_type = paste(assay, plate_number, sample_type, sep = "."),bead_vol = total_vol_ul + 180, tube_vol = total_vol_ul + bead_vol )
+ 
 
-#library_summary %>%
-
-#cbind(library_summary) %>%
-#    mutate(lib_vol_ul = volume_sums,
-#    bead_vol_ul = volume_beads,
-#    total_vol_ul = lib_vol_ul + bead_vol_ul)
-
-#confirm total volumes are all <1.5 mL
+#confirm final tube volumes do not exceed 1.5 mL (or 1500 uL)
 
