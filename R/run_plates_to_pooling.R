@@ -700,7 +700,7 @@ minipool_vols_summary <- minipool_vols_df %>%
   group_by(assay, plate_number, sample_type, DestinationWell) %>%
   dplyr::summarise(total_vol_ul = sum(vol_ul)) %>%
   ungroup() %>%
-  mutate(assay.plate_number.sample_type = paste(assay, plate_number, sample_type, sep = "."),bead_vol = total_vol_ul + 180, tube_vol = total_vol_ul + bead_vol )
+  mutate(assay.plate_number.sample_type = paste(assay, plate_number, sample_type, sep = "."),bead_vol = total_vol_ul *1.8, tube_vol = total_vol_ul + bead_vol )
  
 
 #confirm final tube volumes do not exceed 1.5 mL (or 1500 uL)
