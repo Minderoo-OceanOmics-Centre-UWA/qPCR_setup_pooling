@@ -11,6 +11,7 @@ suppressMessages(library("gtools"))
 suppressMessages(library("ggplate"))
 
 
+
 ##########################################################
 # Variables
 ##########################################################
@@ -142,6 +143,7 @@ export_biomek_pooling_workbook <- function(assays,
   plate_num          <- 0
   out_df             <- data.frame(
     assay = NULL,
+    plate_number = NULL,
     SourcePosition = NULL,
     SourceWell = NULL,
     Volume = NULL,
@@ -179,7 +181,7 @@ export_biomek_pooling_workbook <- function(assays,
           list()
         
         # add volume to pool as well as info on tube destination
-      
+        
         volume_ranges[curr_key] <- tibble(
           miniPool_id = 1:minipool_overview$n_groups[
             minipool_overview$plate_number == curr_plate &
@@ -192,8 +194,8 @@ export_biomek_pooling_workbook <- function(assays,
               by = 1,
               length.out = minipool_overview$n_groups[
                 minipool_overview$plate_number == curr_plate &
-                 minipool_overview$sample_type == sam_type &
-                 minipool_overview$assay == curr_assay
+                  minipool_overview$sample_type == sam_type &
+                  minipool_overview$assay == curr_assay
               ]
             )
           )
@@ -201,13 +203,13 @@ export_biomek_pooling_workbook <- function(assays,
           data.frame() %>%
           list()
         p_num <- substr(curr_plate, nchar(curr_plate), nchar(curr_plate))
-       
+        
         if (sam_type == "sample") {
           dwell <- paste0("A", p_num)
         } else {
           dwell <- paste0("B", p_num)
         }
-
+        
         biomek_deck_pos <- 12 - plate_num
         sourcepos <- paste0("qPCRPlate-P", biomek_deck_pos)
         
@@ -217,7 +219,7 @@ export_biomek_pooling_workbook <- function(assays,
             .,
             volume_ranges[curr_key][[1]],
             by = "miniPool_id"
-         ) %>%
+          ) %>%
           mutate(
             DestinationPosition = "P16",
             DestinationWell = dwell
@@ -256,6 +258,7 @@ export_biomek_pooling_workbook <- function(assays,
           mutate(SourcePosition = sourcepos) %>%
           dplyr::select(
             assay,
+            plate_number,
             SourcePosition,
             SourceWell = pos,
             Volume = vol_ul,
@@ -390,50 +393,50 @@ import_position_df <- function(excel_file) {
 # Import data
 ##########################################################
 if (TRUE){  
-options(dplyr.summarise.inform = FALSE)
+  options(dplyr.summarise.inform = FALSE)
   
-# Make sure directory name doesn't already end in /
-while (endsWith(qpcr_dir, "/")) {
-  qpcr_dir <- substr(qpcr_dir, 1, (nchar(qpcr_dir) - 1))
-}
+  # Make sure directory name doesn't already end in /
+  while (endsWith(qpcr_dir, "/")) {
+    qpcr_dir <- substr(qpcr_dir, 1, (nchar(qpcr_dir) - 1))
+  }
   
-# Make sure input files exist
-if (!file.exists(qpcr_dir)) {
-  stop(
-    paste0(
-      "Error: ",
-      qpcr_dir,
-      " doesn't exist."
+  # Make sure input files exist
+  if (!file.exists(qpcr_dir)) {
+    stop(
+      paste0(
+        "Error: ",
+        qpcr_dir,
+        " doesn't exist."
+      )
     )
-  )
-}
-if (!file.exists(input_file)) {
-  stop(
-    paste0(
-      "Error: ",
-      input_file,
-      " doesn't exist."
+  }
+  if (!file.exists(input_file)) {
+    stop(
+      paste0(
+        "Error: ",
+        input_file,
+        " doesn't exist."
+      )
     )
+  }
+  
+  # Get all the txt file names in qpcr_dir
+  fnames <- list.files(
+    paste0(qpcr_dir, "/"),
+    full.names = TRUE,
+    pattern = ".txt"
   )
-}
   
-# Get all the txt file names in qpcr_dir
-fnames <- list.files(
-  paste0(qpcr_dir, "/"),
-  full.names = TRUE,
-  pattern = ".txt"
-)
-  
-position_df <- import_position_df(input_file)
+  position_df <- import_position_df(input_file)
 }
 
 ##########################################################
 # Main
 ##########################################################
-  
+
 plate_numbers  <- unique(position_df$plate_number)
 assays         <- unique(position_df$assay)
-  
+
 all_lc480_data <- ldply(fnames, read_qPCR_data, assays, plate_numbers)
 all_lc480_data <- change_lc480_colnames(all_lc480_data)
 all_lc480_data$sample <- str_replace(all_lc480_data$sample, "Sample", "")
@@ -451,7 +454,7 @@ if (length(missing_plates) > 0) {
   print(missing_plates)
   stop()
 }
-  
+
 lc480_data_sample <- all_lc480_data %>%
   mutate(plate_number_pos = paste(plate_number, position, sep = ".")) %>%
   dplyr::select(-position, -plate_number) %>%
@@ -460,7 +463,7 @@ lc480_data_sample <- all_lc480_data %>%
 
 
 lc480_data_sample$sample <- lc480_data_sample$SAMPLE
-  
+
 # visualise EPF data in a heatmap
 prefix <- "raw"
 export_plate_pdfs(
@@ -483,7 +486,7 @@ plate_plot_epf <- lc480_data_sample %>%
     title = paste0(unique(.$plate_number), " ", unique(.$assay))
   )
 print(plate_plot_epf)
-  
+
 # identify failed reactions using minimum EPF of 3 and maximum cp of 40
 # (for real samples only, criteria not applied to
 # controls as these are all taken through to sequencing )
@@ -491,7 +494,7 @@ rep_failed <- lc480_data_sample %>%
   mutate(
     discard = case_when(
       replicate == "pool" ~ "NA",
-      (sample_type == "sample" & epf < 3) | (sample_type == "sample" & cp > 40) ~ "DISCARD",
+      (sample_type == "sample" & epf < 2) | (sample_type == "sample" & cp > 40) ~ "DISCARD",
       TRUE ~ "KEEP"
     )
   ) %>%
@@ -501,7 +504,7 @@ rep_failed <- lc480_data_sample %>%
 rep_failed <- rep_failed %>%
   mutate(
     epf_3_to_6 = case_when(
-      (sample_type == "sample" & epf >= 3) & (sample_type == "sample" & epf <= 6) ~ TRUE,
+      (sample_type == "sample" & epf >= 2) & (sample_type == "sample" & epf <= 5) ~ TRUE,
       TRUE ~ FALSE
     )
   ) %>%
@@ -521,7 +524,7 @@ for (curr_assay in assays) {
     tm1_max    <- tm1_mean + tm1_sd
     rep_failed[rep_failed$assay == curr_assay & rep_failed$plate_number == curr_plate, "tm1_sd"]   <- sd(na.omit(tm1s))
     rep_failed[rep_failed$assay == curr_assay & rep_failed$plate_number == curr_plate, "tm1_mean"] <- mean(na.omit(tm1s))
-
+    
     rep_failed[rep_failed$assay == curr_assay & rep_failed$plate_number == curr_plate, ] <- rep_failed[rep_failed$assay == curr_assay & rep_failed$plate_number == curr_plate, ] %>%
       mutate(
         tm1_outside_sd = case_when(
@@ -532,7 +535,7 @@ for (curr_assay in assays) {
       arrange(sample_order(sample))
   }
 }
-  
+
 # summary of number of reps to be discarded per sample
 rep_failed_summary <- rep_failed %>%
   filter(replicate != "pool") %>%
@@ -540,7 +543,7 @@ rep_failed_summary <- rep_failed %>%
   dplyr::summarise(count_discard = sum(discard == "DISCARD")) %>%
   ungroup() %>%
   arrange(sample_order(sample))
-  
+
 # identify the total number of samples per assay
 # with replicates to be discarded
 print_failed_rep_message(rep_failed_summary, assays)
@@ -567,7 +570,7 @@ write.csv(rep_failed[(rep_failed$tm1_outside_sd == TRUE | rep_failed$epf_3_to_6 
 # The format is assay.plate.position
 # Example:
 # reps_to_remove <- c("16S.Plate1.A2", "MiFish.Plate1.A3", "MiFish.Plate1.B1")
-reps_to_remove <- c()
+reps_to_remove <- c("MiFish.Plate5.A6")
 rep_failed <- rep_failed %>%
   mutate(
     discard = case_when(
@@ -581,7 +584,7 @@ rep_failed <- rep_failed %>%
 discarded_samples <- rep_failed_summary %>%
   filter(count_discard >= 2) %>%
   arrange(sample)
-  
+
 # export table for manual removal of failed replicates from 384-well plates
 ## AB - can this please only include samples where 1 replicate needs to be discarded.
 # In cases where >1 rep is discarded
@@ -600,12 +603,12 @@ duplicated_rows <- duplicated(reps_to_discard[c("assay", "sample")]) | duplicate
 reps_to_discard <- subset(reps_to_discard, !duplicated_rows)
 
 write_csv(reps_to_discard, paste0(output_dir, "/reps_to_discard.csv"))
-  
+
 # visualise plates with failed replicates/samples removed
-  
+
 clean_lc480_data <- rep_failed %>%
   filter(discard == "KEEP")
-  
+
 ##### visualise clean EPF data in a heatmap ####
 prefix <- "clean"
 export_plate_pdfs(
@@ -628,7 +631,7 @@ clean_plate_plot_epf <- clean_lc480_data %>%
     title = paste0(unique(.$plate_number), " ", unique(.$assay))
   )
 print(clean_plate_plot_epf)
-  
+
 # summary EPF samples and controls
 # (at this point is still includes failed replicates -
 # this is ok, as they are filtered later)
@@ -644,7 +647,7 @@ epf_cal <- rep_failed %>%
     number_valid_reps = sum(epf >= 3)) %>%
   arrange(sample_order(sample)) %>%
   ungroup()
-  
+
 # assign calculated mean to respective sample-pool
 # in the original plate layout
 # for samples that have 2 or more useful replicates & all control samples
@@ -678,7 +681,7 @@ position_df_pool <- position_df %>%
 
 # These calculations use grouping of samples based on "minipool" approach 
 # For each plate 6 minipools are created for the samples
-  
+
 
 minipool_overview <-   position_df_pool %>%
   group_by(assay, plate_number, sample_type) %>%
@@ -694,14 +697,14 @@ minipool_calc_vols <- export_biomek_pooling_workbook(assays, plate_numbers, posi
 
 
 # summary with volumes of sample/controls and volume of beads to add for cleanup (1.8 x volume)
-
+## add the total number of samples in each tube 
 minipool_vols_df <- do.call(rbind.data.frame, minipool_calc_vols)
 minipool_vols_summary <- minipool_vols_df %>%
   group_by(assay, plate_number, sample_type, DestinationWell) %>%
   dplyr::summarise(total_vol_ul = sum(vol_ul)) %>%
   ungroup() %>%
   mutate(assay.plate_number.sample_type = paste(assay, plate_number, sample_type, sep = "."),bead_vol = total_vol_ul *1.8, tube_vol = total_vol_ul + bead_vol )
- 
+
 
 #confirm final tube volumes do not exceed 1.5 mL (or 1500 uL)
 
