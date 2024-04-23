@@ -11,7 +11,6 @@ suppressMessages(library("gtools"))
 suppressMessages(library("ggplate"))
 
 
-
 ##########################################################
 # Variables
 ##########################################################
@@ -21,6 +20,7 @@ qpcr_dir     <- "R/input/qPCR_data/"
 output_dir   <- "R/output/"
 plate_width  <- 12
 plate_height <- 8
+
 
 ##########################################################
 # Functions
@@ -133,7 +133,7 @@ export_biomek_pooling_workbook <- function(assays,
   # create a blank dataframe to output loop data into
   pooling_df <- data.frame()
   
-  #identify variables for loop below
+  # identify variables for loop below
   minipool_calcs     <- list()
   volume_ranges      <- list()
   minipool_calc_vols <- list()
@@ -141,6 +141,9 @@ export_biomek_pooling_workbook <- function(assays,
   volume_sums        <- c()
   volume_beads       <- c()
   plate_num          <- 0
+  book               <- 0
+  sam_type_num       <- 0
+  biomek_deck_pos    <- 11
   out_df             <- data.frame(
     assay = NULL,
     plate_number = NULL,
@@ -150,14 +153,17 @@ export_biomek_pooling_workbook <- function(assays,
     DestinationPosition = NULL,
     DestinationWell = NULL
   )
+  out_dfs            <- list()
   
   # Loop that will cycle through assays, plate numbers, and sample types
   for (curr_assay in assays) {
     subs <- position_df_pool |> filter(assay == curr_assay)
+    unique_sam_types <- unique(subs$sample_type)
     for (curr_plate in sort(plate_numbers)) {
       plate_num <- plate_num + 1
       keys <- c()
-      for (sam_type in unique(subs$sample_type)) {
+      
+      for (sam_type in unique_sam_types) {
         curr_key   <- paste0(curr_assay, "_", curr_plate, "_", sam_type)
         keys <- append(keys, curr_key)
         
@@ -210,7 +216,26 @@ export_biomek_pooling_workbook <- function(assays,
           dwell <- paste0("B", p_num)
         }
         
-        biomek_deck_pos <- 12 - plate_num
+        sam_type_num <- sam_type_num + 1
+        if (sam_type_num > length(unique_sam_types)) {
+          sam_type_num    <- 1
+          biomek_deck_pos <- biomek_deck_pos - 1
+          if (biomek_deck_pos < 8) {
+            biomek_deck_pos    <- 11
+            book               <- book + 1
+            out_dfs[[book]]    <- out_df
+          
+            out_df             <- data.frame(
+              assay = NULL,
+              plate_number = NULL,
+              SourcePosition = NULL,
+              SourceWell = NULL,
+              Volume = NULL,
+              DestinationPosition = NULL,
+              DestinationWell = NULL
+            )
+          }
+        }
         sourcepos <- paste0("qPCRPlate-P", biomek_deck_pos)
         
         minipool_calc_vols[curr_key] <-
@@ -250,7 +275,6 @@ export_biomek_pooling_workbook <- function(assays,
           theme(axis.text.y = element_text(size = 5)) +
           coord_flip()
         
-        
         tmp_df <- rbind(
           minipool_calc_vols[keys[1]][[1]],
           minipool_calc_vols[keys[2]][[1]]
@@ -275,14 +299,17 @@ export_biomek_pooling_workbook <- function(assays,
       }
     }
   }
-  write_csv(out_df, paste0(output_dir, "/biomek_pooling_workbook.csv"))
+  book              <- book + 1
+  out_dfs[[book]]   <- out_df
+  
+  for (i in 1:book) {
+    write_csv(out_dfs[[i]], paste0(output_dir, "/biomek_pooling_workbook_", i,".csv")) 
+  }
   
   print(paste0("Finished! Output files in: ", output_dir))
   
   return(minipool_calc_vols)
 }
-
-
 
 print_failed_rep_message <- function(rep_failed_summary, assays) {
   cat("\n")
@@ -308,7 +335,6 @@ print_failed_rep_message <- function(rep_failed_summary, assays) {
       "assay with 2 or more failed replicates\n"
     )
   }
-  #cat("\n")
   cat("--------------------------------------------------------------------------------")
   cat("\n\n")
 }
@@ -392,7 +418,8 @@ import_position_df <- function(excel_file) {
 ##########################################################
 # Import data
 ##########################################################
-if (TRUE){  
+
+if (TRUE) {  
   options(dplyr.summarise.inform = FALSE)
   
   # Make sure directory name doesn't already end in /
@@ -427,42 +454,42 @@ if (TRUE){
     pattern = ".txt"
   )
   
-  position_df <- import_position_df(input_file)
-}
-
-##########################################################
-# Main
-##########################################################
-
-plate_numbers  <- unique(position_df$plate_number)
-assays         <- unique(position_df$assay)
-
-all_lc480_data <- ldply(fnames, read_qPCR_data, assays, plate_numbers)
-all_lc480_data <- change_lc480_colnames(all_lc480_data)
-all_lc480_data$sample <- str_replace(all_lc480_data$sample, "Sample", "")
-all_lc480_data$sample <- trimws(all_lc480_data$sample)
-
-# Make sure qPCR data isn't missing any plates
-missing_plates <- c()
-for (plate in plate_numbers) {
-  if (! plate %in% unique(all_lc480_data$plate_number)) {
-    missing_plates <- c(missing_plates, plate)
+  fnames         <- str_replace(fnames, "//", "/")
+  position_df    <- import_position_df(input_file)
+  plate_numbers  <- unique(position_df$plate_number)
+  assays         <- unique(position_df$assay)
+  
+  all_lc480_data <- ldply(fnames, read_qPCR_data, assays, plate_numbers)
+  all_lc480_data <- change_lc480_colnames(all_lc480_data)
+  all_lc480_data$sample <- str_replace(all_lc480_data$sample, "Sample", "")
+  all_lc480_data$sample <- trimws(all_lc480_data$sample)
+  
+  # Make sure qPCR data isn't missing any plates
+  missing_plates <- c()
+  for (plate in plate_numbers) {
+    if (! plate %in% unique(all_lc480_data$plate_number)) {
+      missing_plates <- c(missing_plates, plate)
+    }
   }
+  if (length(missing_plates) > 0) {
+    print("qPCR data directory is missing plates: ")
+    print(missing_plates)
+    stop()
+  }
+  
+  lc480_data_sample <- all_lc480_data %>%
+    mutate(plate_number_pos = paste(plate_number, position, sep = ".")) %>%
+    dplyr::select(-position, -plate_number) %>%
+    left_join(., position_df, by = c("plate_number_pos", "assay")) %>%
+    filter(., replicate != "pool")
+  
+  lc480_data_sample$sample <- lc480_data_sample$SAMPLE
 }
-if (length(missing_plates) > 0) {
-  print("qPCR data directory is missing plates: ")
-  print(missing_plates)
-  stop()
-}
-
-lc480_data_sample <- all_lc480_data %>%
-  mutate(plate_number_pos = paste(plate_number, position, sep = ".")) %>%
-  dplyr::select(-position, -plate_number) %>%
-  left_join(., position_df, by = c("plate_number_pos", "assay")) %>%
-  filter(., replicate != "pool")
 
 
-lc480_data_sample$sample <- lc480_data_sample$SAMPLE
+##########################################################
+# Visualise raw data
+##########################################################
 
 # visualise EPF data in a heatmap
 prefix <- "raw"
@@ -475,6 +502,7 @@ export_plate_pdfs(
   plate_width,
   plate_height
 )
+
 # The plots are outputed into the output_dir specified as .pdf but let's look at one of those plots in R studio. 
 plate_plot_epf <- lc480_data_sample %>%
   filter(plate_number == "Plate4" & assay == "MiFish") %>%
@@ -487,7 +515,12 @@ plate_plot_epf <- lc480_data_sample %>%
   )
 print(plate_plot_epf)
 
-# identify failed reactions using minimum EPF of 3 and maximum cp of 40
+
+##########################################################
+# Flag samples for discarding or double checking
+##########################################################
+
+# identify failed reactions using minimum EPF of 2 and maximum cp of 40
 # (for real samples only, criteria not applied to
 # controls as these are all taken through to sequencing )
 rep_failed <- lc480_data_sample %>%
@@ -500,10 +533,10 @@ rep_failed <- lc480_data_sample %>%
   ) %>%
   arrange(sample_order(sample))
 
-# Flag samples with epf between 3 and 6
+# Flag samples with epf between 2 and 5
 rep_failed <- rep_failed %>%
   mutate(
-    epf_3_to_6 = case_when(
+    epf_2_to_5 = case_when(
       (sample_type == "sample" & epf >= 2) & (sample_type == "sample" & epf <= 5) ~ TRUE,
       TRUE ~ FALSE
     )
@@ -511,7 +544,7 @@ rep_failed <- rep_failed %>%
   arrange(sample_order(sample))
 
 # Flag samples with tm1 outside of standard deviation
-plates <- unique(rep_failed$plate_number)
+plates                    <- unique(rep_failed$plate_number)
 rep_failed$tm1_sd         <- NA
 rep_failed$tm1_mean       <- NA
 rep_failed$tm1_outside_sd <- NA
@@ -536,6 +569,11 @@ for (curr_assay in assays) {
   }
 }
 
+
+##########################################################
+# View the worse reps
+##########################################################
+
 # summary of number of reps to be discarded per sample
 rep_failed_summary <- rep_failed %>%
   filter(replicate != "pool") %>%
@@ -548,37 +586,59 @@ rep_failed_summary <- rep_failed %>%
 # with replicates to be discarded
 print_failed_rep_message(rep_failed_summary, assays)
 
-# print the failed reps (reps where the epf < 3 and the Cp >40)
+# print the failed reps (reps where the epf < 2 and the Cp >40)
 discard_df <- print(rep_failed[rep_failed$discard == "DISCARD", ])
 
-# print the reps with epf between 3 to 6  
-print(rep_failed[rep_failed$epf_3_to_6 == TRUE, ])
+# print the reps with epf between 2 to 5  
+print(rep_failed[rep_failed$epf_2_to_5 == TRUE, ])
 
 # print reps with tm1 outside of standard deviation
 print(rep_failed[rep_failed$tm1_outside_sd == TRUE, ])
 
-
 # Print all the bad reps
-print(rep_failed[(rep_failed$tm1_outside_sd == TRUE | rep_failed$epf_3_to_6 == TRUE | rep_failed$discard == "DISCARD") & rep_failed$sample_type == "sample", ])
-write.csv(rep_failed[(rep_failed$tm1_outside_sd == TRUE | rep_failed$epf_3_to_6 == TRUE | rep_failed$discard == "DISCARD") & rep_failed$sample_type == "sample", ], paste0(output_dir, "rxns_to_check.csv"))
+print(rep_failed[(rep_failed$tm1_outside_sd == TRUE | rep_failed$epf_2_to_5 == TRUE | rep_failed$discard == "DISCARD") & rep_failed$sample_type == "sample", ])
+
+
+##########################################################
+# Output rxns_to_check.csv
+##########################################################
+
+write.csv(row.names = FALSE, rep_failed[(rep_failed$tm1_outside_sd == TRUE | rep_failed$epf_2_to_5 == TRUE | rep_failed$discard == "DISCARD") & rep_failed$sample_type == "sample", ], paste0(output_dir, "rxns_to_check.csv"))
 
 
 ######################################################
-# Manually remove reps
+# Import rxns_to_check.csv and merge discard column
 ######################################################
-# put your reps to remove in the reps_to_remove vector
-# The format is assay.plate.position
-# Example:
-# reps_to_remove <- c("16S.Plate1.A2", "MiFish.Plate1.A3", "MiFish.Plate1.B1")
-reps_to_remove <- c("MiFish.Plate5.A6")
-rep_failed <- rep_failed %>%
-  mutate(
-    discard = case_when(
-      (discard == "DISCARD") | (discard == "KEEP" & assay_plate_number_pos %in% reps_to_remove) ~ "DISCARD",
-      TRUE ~ "KEEP"
-    )
-  ) %>%
-  arrange(sample_order(sample))
+
+checked_runs <- read.csv(paste0(output_dir, "rxns_to_check.csv"))
+
+for (row in 1:nrow(checked_runs)) {
+  id <- checked_runs[row, "assay_plate_number_pos"]
+  disc <- toupper(checked_runs[row, "discard"])
+  
+  if (disc != "KEEP" & disc != "DISCARD") {
+    while (TRUE) {
+      print(paste0("discard value of ", disc, " is not valid for ", id))
+      answer <- readline(prompt="Enter 1 to keep, or 2 to discard: ")
+      if (answer == 1) {
+        disc <- "KEEP"
+        break
+      } else if (answer == 2) {
+        disc <- "DISCARD"
+        break
+      } else {
+        print(paste0(answer, " is not a valid option"))
+      }
+    }
+  }
+  
+  rep_failed$discard[rep_failed$assay_plate_number_pos == id] <- disc
+}
+
+
+##########################################################
+# Output reps_to_discard.csv
+##########################################################
 
 #identify samples to be completely removed from pool (DISCARD >= 2)
 discarded_samples <- rep_failed_summary %>%
@@ -594,17 +654,17 @@ reps_to_discard <- rep_failed %>%
   arrange(plate_number, sample_order(pos))
 
 reps_to_discard$sample <- substr(reps_to_discard$sample_replicate, 1, nchar(reps_to_discard$sample_replicate)-2)
-#reps_to_discard        <- reps_to_discard[!duplicated(reps_to_discard$sample),]
-
-duplicated_rows <- duplicated(reps_to_discard[c("assay", "sample")]) | duplicated(reps_to_discard[c("assay", "sample")], fromLast = TRUE)
 
 # Keep only rows where the sample is not duplicated
-#reps_to_discard <- reps_to_discard[!duplicated_rows, ]
+duplicated_rows <- duplicated(reps_to_discard[c("assay", "sample")]) | duplicated(reps_to_discard[c("assay", "sample")], fromLast = TRUE)
 reps_to_discard <- subset(reps_to_discard, !duplicated_rows)
 
 write_csv(reps_to_discard, paste0(output_dir, "/reps_to_discard.csv"))
 
-# visualise plates with failed replicates/samples removed
+
+##########################################################
+# Visualise clean data
+##########################################################
 
 clean_lc480_data <- rep_failed %>%
   filter(discard == "KEEP")
@@ -620,6 +680,7 @@ export_plate_pdfs(
   plate_width,
   plate_height
 )
+
 # Let's look at one of those plots in R studio
 clean_plate_plot_epf <- clean_lc480_data %>%
   filter(plate_number == "Plate5" & assay == "MiFish") %>%
@@ -631,6 +692,11 @@ clean_plate_plot_epf <- clean_lc480_data %>%
     title = paste0(unique(.$plate_number), " ", unique(.$assay))
   )
 print(clean_plate_plot_epf)
+
+
+##########################################################
+# EPF calcs
+##########################################################
 
 # summary EPF samples and controls
 # (at this point is still includes failed replicates -
@@ -682,7 +748,6 @@ position_df_pool <- position_df %>%
 # These calculations use grouping of samples based on "minipool" approach 
 # For each plate 6 minipools are created for the samples
 
-
 minipool_overview <-   position_df_pool %>%
   group_by(assay, plate_number, sample_type) %>%
   dplyr::summarise(
@@ -695,7 +760,6 @@ minipool_overview <-   position_df_pool %>%
 
 minipool_calc_vols <- export_biomek_pooling_workbook(assays, plate_numbers, position_df_pool, minipool_overview, output_dir)
 
-
 # summary with volumes of sample/controls and volume of beads to add for cleanup (1.8 x volume)
 ## add the total number of samples in each tube 
 minipool_vols_df <- do.call(rbind.data.frame, minipool_calc_vols)
@@ -705,6 +769,4 @@ minipool_vols_summary <- minipool_vols_df %>%
   ungroup() %>%
   mutate(assay.plate_number.sample_type = paste(assay, plate_number, sample_type, sep = "."),bead_vol = total_vol_ul *1.8, tube_vol = total_vol_ul + bead_vol )
 
-
 #confirm final tube volumes do not exceed 1.5 mL (or 1500 uL)
-
