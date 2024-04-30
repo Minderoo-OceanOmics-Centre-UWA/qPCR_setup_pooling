@@ -40,9 +40,6 @@ get_possible_counts <- function(sample_ids,
         curr_sample_cutoff    <- curr_sample_cutoff + sample_count_per_plate
         sample_cutoffs        <- append(sample_cutoffs, curr_sample_cutoff)
 
-        #
-        # TODO: I may need to test this more to make sure it works
-        #
         # We still have rv primers left
         if (curr_rv_count < max_rv_count) {
             curr_rv_count       <- curr_rv_count + plate_height
@@ -57,11 +54,11 @@ get_possible_counts <- function(sample_ids,
 
             # We are up to the next fw primer
             } else {
-                curr_fw_plate_count <- 0
+                curr_fw_plate_count <- 2
                 curr_fw_count       <- curr_fw_count + plate_width
             }
         }
-
+        
         possible_fw_counts <- append(possible_fw_counts, curr_fw_count)
         possible_rv_counts <- append(possible_rv_counts, curr_rv_count)
     }
