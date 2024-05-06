@@ -15,9 +15,9 @@ suppressMessages(library("ggplate"))
 # Variables
 ##########################################################
 
-input_file   <- "R/output/V09_V12_AB_df.xlsx"
-qpcr_dir     <- "R/input/qPCR_data/"
-output_dir   <- "R/output/"
+input_file   <- "test_data/output/output_df.xlsx"
+qpcr_dir     <- "test_data/input/qPCR_test_data"
+output_dir   <- "test_data/output/"
 plate_width  <- 12
 plate_height <- 8
 
@@ -219,9 +219,9 @@ export_biomek_pooling_workbook <- function(assays,
         sam_type_num <- sam_type_num + 1
         if (sam_type_num > length(unique_sam_types)) {
           sam_type_num    <- 1
-          biomek_deck_pos <- biomek_deck_pos - 1
-          if (biomek_deck_pos < 8) {
-            biomek_deck_pos    <- 11
+          biomek_deck_pos <- biomek_deck_pos + 1
+          #if (biomek_deck_pos < 8) {
+           # biomek_deck_pos    <- 11
             book               <- book + 1
             out_dfs[[book]]    <- out_df
           
@@ -235,8 +235,7 @@ export_biomek_pooling_workbook <- function(assays,
               DestinationWell = NULL
             )
           }
-        }
-        sourcepos <- paste0("qPCRPlate-P", biomek_deck_pos)
+        sourcepos <- paste0("qPCR", biomek_deck_pos)
         
         minipool_calc_vols[curr_key] <-
           minipool_calcs[curr_key][[1]] %>%
@@ -505,7 +504,7 @@ export_plate_pdfs(
 
 # The plots are outputed into the output_dir specified as .pdf but let's look at one of those plots in R studio. 
 plate_plot_epf <- lc480_data_sample %>%
-  filter(plate_number == "Plate4" & assay == "MiFish") %>%
+  filter(plate_number == "Plate1" & assay == "16S") %>%
   plate_plot(
     position = pos,
     value = epf,
@@ -667,7 +666,9 @@ write_csv(reps_to_discard, paste0(output_dir, "/reps_to_discard.csv"))
 ##########################################################
 
 clean_lc480_data <- rep_failed %>%
-  filter(discard == "KEEP")
+  dplyr::group_by(assay, sample_id) %>%
+  filter(sum(discard == "KEEP") >= 2)
+
 
 ##### visualise clean EPF data in a heatmap ####
 prefix <- "clean"
@@ -710,7 +711,7 @@ epf_cal <- rep_failed %>%
     min =  min(epf),
     max = max(epf),
     diff_epf = max(epf) - min(epf),
-    number_valid_reps = sum(epf >= 3)) %>%
+    number_valid_reps = (sum(discard == "KEEP") >= 2)) %>%
   arrange(sample_order(sample)) %>%
   ungroup()
 
@@ -720,7 +721,7 @@ epf_cal <- rep_failed %>%
 epf_cal_mean <- epf_cal %>%
   filter(
     sample_type == "control" |
-      (sample_type == "sample" & number_valid_reps >= 2)
+      (sample_type == "sample" & number_valid_reps == TRUE)
   ) %>%
   mutate(sample_replicate = paste0(sample, "-pool")) %>%
   mutate(
