@@ -274,23 +274,25 @@ export_biomek_pooling_workbook <- function(assays,
           theme(axis.text.y = element_text(size = 5)) +
           coord_flip()
         
-        tmp_df <- rbind(
-          minipool_calc_vols[keys[1]][[1]],
-          minipool_calc_vols[keys[2]][[1]]
-        ) %>%
-          mutate(SourcePosition = sourcepos) %>%
-          dplyr::select(
-            assay,
-            plate_number,
-            SourcePosition,
-            SourceWell = pos,
-            Volume = vol_ul,
-            DestinationPosition,
-            DestinationWell
+        if (sam_type_num == length(unique_sam_types)) {
+          tmp_df <- rbind(
+            minipool_calc_vols[keys[1]][[1]],
+            minipool_calc_vols[keys[2]][[1]]
           ) %>%
-          arrange(sample_order(SourceWell))
+            mutate(SourcePosition = sourcepos) %>%
+            dplyr::select(
+              assay,
+              plate_number,
+              SourcePosition,
+              SourceWell = pos,
+              Volume = vol_ul,
+              DestinationPosition,
+              DestinationWell
+            ) %>%
+            arrange(sample_order(SourceWell))
         
-        out_df <- rbind(out_df, tmp_df)
+          out_df <- rbind(out_df, tmp_df)
+        }
         
         pdf(paste0(output_dir, curr_key, "_minipool_plot.pdf"))
         print(minipool_plots[curr_key])
