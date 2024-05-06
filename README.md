@@ -8,8 +8,8 @@ install.packages("tidyverse")
 install.packages("readxl")
 install.packages("openxlsx")
 ```
+# There are 2 script templates that can be used to run these functions: run_meta_to_plates and run_plates_to_pooling
 
-## meta_to_plates() function
 ### Running meta_to_plates()
 This is the minimum arguments required to run the meta_to_plates() function:
 ```
@@ -60,7 +60,7 @@ meta_to_plates(
 - `control_pattern`: A string that will be used to flag samples as control samples. Default = "WC|DI|EB|BC|NTC|ITC|Cont". This default value means that any sample containing "WC", "DI", "EB", "BC", "NTC", "ITC", or "Cont" will be flagged as a control sample.
 
 ### meta_to_plates() input
-An example input file can be viewed at `test_data/fake_meta.xlsx`
+An example input file can be viewed at `test_data/AB_V12_V9_metadata.xlsx`
 
 The input Excel file should contain a metadata sheet and one index sheet for each assay.
 - `metadata`: Should have the columns `sample_id` and `sequencing_run`.
@@ -73,16 +73,16 @@ The input Excel file should contain a metadata sheet and one index sheet for eac
   - `fw_rv`: Use this column to indicate if the primer is a fw or rv primer. Values can be `fw` or `rv`.
 
 ### meta_to_plates() output
-An example output file can be viewed at `test_data/results.xlsx`
+An example output file can be viewed at `test_data/output.xlsx`
 
 The output Excel file will have four sheets; `plates`, `big_plates`, `metadata`, and `position_df`.
 - `plates`: Will be all the plates with their.
 - `big_plates`: Will be bigger versions of the plates with 3 replicates and a pool replicate added to each sample.
 - `metadata`: Your samples will be duplicated for each assay. The metadata will now contain demultiplex, plate, and well information.
-- `position_df`: This will have your samples duplicated for each replicate in the big plates. This sheet is needed for the `plates_to_pooling()` function.
+- `position_df`: This will have your samples duplicated for each replicate in the big plates. This sheet is needed for the `run_plates_to_pooling()` script.
 
 ## plates_to_pooling() function
-### Running plates_to_pooling()
+### Running plates_to_pooling() 
 This is the minimum arguments required to run the plates_to_pooling() function:
 ```
 input_file <- "path/to/results.xlsx"
