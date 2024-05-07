@@ -158,14 +158,14 @@ export_biomek_pooling_workbook <- function(assays,
   # Loop that will cycle through assays, plate numbers, and sample types
   for (curr_assay in assays) {
     subs <- position_df_pool |> filter(assay == curr_assay)
-    unique_sam_types <- unique(subs$sample_type)
-    for (curr_plate in sort(plate_numbers)) {
-      plate_num <- plate_num + 1
-      keys <- c()
+    for (curr_plate in plate_numbers) {
+      unique_sam_types <- unique(subs[subs$plate_number == curr_plate, ]$sample_type)
+      plate_num        <- plate_num + 1
+      keys             <- c()
       
       for (sam_type in unique_sam_types) {
-        curr_key   <- paste0(curr_assay, "_", curr_plate, "_", sam_type)
-        keys <- append(keys, curr_key)
+        curr_key <- paste0(curr_assay, "_", curr_plate, "_", sam_type)
+        keys     <- append(keys, curr_key)
         
         # Minipool calculations per plate per assay
         
@@ -189,26 +189,18 @@ export_biomek_pooling_workbook <- function(assays,
         # add volume to pool as well as info on tube destination
         
         volume_ranges[curr_key] <- tibble(
-          miniPool_id = 1:minipool_overview$n_groups[
-            minipool_overview$plate_number == curr_plate &
-              minipool_overview$sample_type == sam_type &
-              minipool_overview$assay == curr_assay
-          ],
+          miniPool_id = 1:6,
           vol_ul = rev(
             seq(
               from = 4,
               by = 1,
-              length.out = minipool_overview$n_groups[
-                minipool_overview$plate_number == curr_plate &
-                  minipool_overview$sample_type == sam_type &
-                  minipool_overview$assay == curr_assay
-              ]
+              length.out = 6
             )
           )
         ) %>%
           data.frame() %>%
           list()
-        p_num <- substr(curr_plate, nchar(curr_plate), nchar(curr_plate))
+        p_num <- substr(curr_plate, 6, nchar(curr_plate))
         
         if (sam_type == "sample") {
           dwell <- paste0("A", p_num)
@@ -219,9 +211,9 @@ export_biomek_pooling_workbook <- function(assays,
         sam_type_num <- sam_type_num + 1
         if (sam_type_num > length(unique_sam_types)) {
           sam_type_num    <- 1
-          biomek_deck_pos <- biomek_deck_pos + 1
-          #if (biomek_deck_pos < 8) {
-           # biomek_deck_pos    <- 11
+          biomek_deck_pos <- biomek_deck_pos - 1
+          if (biomek_deck_pos < 8) {
+            biomek_deck_pos    <- 11
             book               <- book + 1
             out_dfs[[book]]    <- out_df
           
@@ -235,6 +227,7 @@ export_biomek_pooling_workbook <- function(assays,
               DestinationWell = NULL
             )
           }
+        }
         sourcepos <- paste0("qPCR", biomek_deck_pos)
         
         minipool_calc_vols[curr_key] <-
@@ -275,10 +268,10 @@ export_biomek_pooling_workbook <- function(assays,
           coord_flip()
         
         if (sam_type_num == length(unique_sam_types)) {
-          tmp_df <- rbind(
-            minipool_calc_vols[keys[1]][[1]],
-            minipool_calc_vols[keys[2]][[1]]
-          ) %>%
+          if (length(unique_sam_types) == 1) {
+            tmp_df <- rbind(
+              minipool_calc_vols[keys[1]][[1]],
+            ) %>%
             mutate(SourcePosition = sourcepos) %>%
             dplyr::select(
               assay,
@@ -290,6 +283,23 @@ export_biomek_pooling_workbook <- function(assays,
               DestinationWell
             ) %>%
             arrange(sample_order(SourceWell))
+          } else if (length(unique_sam_types) == 2) {
+            tmp_df <- rbind(
+              minipool_calc_vols[keys[1]][[1]],
+              minipool_calc_vols[keys[2]][[1]]
+            ) %>%
+            mutate(SourcePosition = sourcepos) %>%
+            dplyr::select(
+              assay,
+              plate_number,
+              SourcePosition,
+              SourceWell = pos,
+              Volume = vol_ul,
+              DestinationPosition,
+              DestinationWell
+            ) %>%
+            arrange(sample_order(SourceWell))
+          }
         
           out_df <- rbind(out_df, tmp_df)
         }

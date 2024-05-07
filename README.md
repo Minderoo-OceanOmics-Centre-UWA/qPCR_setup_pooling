@@ -1,18 +1,30 @@
 # qPCR_setup_pooling
+
 Code for manual qPCR setup and amplicon pooling for eDNA.
 
 ## Setup
-Install tidyverse, readxl, and openxlsx. This can be done in R studio with: 
-```
+
+Install dependencies. This can be done in R studio with:
+
+```{R}
 install.packages("tidyverse")
 install.packages("readxl")
 install.packages("openxlsx")
+install.packages("plyr")
+install.packages("gtools")
+install.packages("ggplate")
 ```
-# There are 2 script templates that can be used to run these functions: run_meta_to_plates and run_plates_to_pooling
 
-### Running meta_to_plates()
+## Script templates
+
+There is a template file in the R folder called `run_meta_to_plates.R` that can be used to run the meta_to_plates() function. The  full script to run the plates-to-pooling functionality can be found in `run_plates_to_pooling.R`.
+
+## Running meta_to_plates()
+
 This is the minimum arguments required to run the meta_to_plates() function:
-```
+
+```{R}
+source("R/meta_to_plates.R")
 input_file  <- "path/to/input.xlsx"
 output_file <- "path/to/output.xlsx"
 assays      <- c("16S", "MiFish")
@@ -26,8 +38,11 @@ meta_to_plates(
 )
 ```
 
+Note: This assumes the R folder with all the scripts is in your current working directory.
+
 This is all the arguments that can be used when running the meta_to_plates() function:
-```
+
+```{R}
 input_file      <- "path/to/input.xlsx"
 output_file     <- "path/to/output.xlsx"
 assays          <- c("16S", "MiFish")
@@ -35,7 +50,7 @@ run             <- "run_1"
 plate_width     <- 12
 plate_height    <- 8
 controls        <- c("ITC", "NTC")
-control_pattern <- "WC|DI|EB|BC|NTC|ITC|Cont"
+control_pattern <- "WC|DI|EB|BC|NTC|ITC|Cont|BL"
 
 meta_to_plates(
     input_file,
@@ -50,19 +65,22 @@ meta_to_plates(
 ```
 
 ### meta_to_plates() arguments
+
 - `input_file`: A path to an Excel file in the format explained below in the 'meta_to_plates() input' section.
 - `output_file`: The path for your output Excel file.
 - `assays`: A vector of assays. These should match the assay names found in the input file.
-- `run`: The name of the run. This should match the sequencing run name found in the input file. 
+- `run`: The name of the run. This should match the sequencing run name found in the input file.
 - `plate_width`: The number of columns per plate. Default = 12.
-- `plate_height`: The number of rows per plate. Default = 8. Max allowed = 13. 
+- `plate_height`: The number of rows per plate. Default = 8. Max allowed = 13.
 - `controls`: A vector of control samples that will be added at the end of each plate. Default = c("ITC", "NTC").
-- `control_pattern`: A string that will be used to flag samples as control samples. Default = "WC|DI|EB|BC|NTC|ITC|Cont". This default value means that any sample containing "WC", "DI", "EB", "BC", "NTC", "ITC", or "Cont" will be flagged as a control sample.
+- `control_pattern`: A string that will be used to flag samples as control samples. Default = "WC|DI|EB|BC|NTC|ITC|Cont|BL". This default value means that any sample containing "WC", "DI", "EB", "BC", "NTC", "ITC", "Cont", or "BL" will be flagged as a control sample.
 
 ### meta_to_plates() input
+
 An example input file can be viewed at `test_data/AB_V12_V9_metadata.xlsx`
 
 The input Excel file should contain a metadata sheet and one index sheet for each assay.
+
 - `metadata`: Should have the columns `sample_id` and `sequencing_run`.
   - `sample_id`: This column will be used to name your samples and to flag samples as control samples.
   - `sequencing_run`: This column will be used to use only samples with the same run as the `run argument`.
@@ -73,72 +91,78 @@ The input Excel file should contain a metadata sheet and one index sheet for eac
   - `fw_rv`: Use this column to indicate if the primer is a fw or rv primer. Values can be `fw` or `rv`.
 
 ### meta_to_plates() output
+
 An example output file can be viewed at `test_data/output.xlsx`
 
 The output Excel file will have four sheets; `plates`, `big_plates`, `metadata`, and `position_df`.
+
 - `plates`: Will be all the plates with their.
 - `big_plates`: Will be bigger versions of the plates with 3 replicates and a pool replicate added to each sample.
 - `metadata`: Your samples will be duplicated for each assay. The metadata will now contain demultiplex, plate, and well information.
 - `position_df`: This will have your samples duplicated for each replicate in the big plates. This sheet is needed for the `run_plates_to_pooling()` script.
 
 ## plates_to_pooling() function
-### Running plates_to_pooling() 
-This is the minimum arguments required to run the plates_to_pooling() function:
-```
-input_file <- "path/to/results.xlsx"
-qpcr_dir   <- "path/to/qPCR_data"
-output_dir <- "path/to/output_dir"
 
-plates_to_pooling(
-    input_file,
-    qpcr_dir,
-    output_dir
-)
-```
+### Running run_plates_to_pooling
 
-This is all the arguments that can be used when running the plates_to_pooing() function:
-```
-input_file   <- "path/to/results.xlsx"
-qpcr_dir     <- "path/to/qPCR_data"
-output_dir   <- "path/to/output_dir"
+These are the variables you may need to change in the `run_plates_to_pooling.R` script:
+
+```{R}
+input_file   <- "test_data/output/output_df.xlsx"
+qpcr_dir     <- "test_data/input/qPCR_test_data"
+output_dir   <- "test_data/output/"
 plate_width  <- 12
 plate_height <- 8
-
-plates_to_pooling(
-    input_file,
-    qpcr_dir,
-    output_dir,
-    plate_width,
-    plate_height
-)
 ```
 
-### plates_to_pooling() arguments
+### run_plates_to_pooling variables
+
 - `input_file`: A path to the Excel file that was the output of the meta_to_plates() function.
 - `qpcr_dir`: Directory with qPCR data. Filenames should be in a specific format mentioned below.
 - `output_dir`: Directory where you would like all output files. The output files are explained in more detail below.
 - `plate_width`: The number of columns per plate. Default = 12. This should be the same value you used in meta_to_plates().
 - `plate_height`: The number of rows per plate. Default = 8. Max allowed = 13. This should be the same value you used in meta_to_plates().
 
-### plates_to_pooling() input
+### run_plates_to_pooling input
+
 - `input_file`: This is the output file from the meta_to_plates() function. An example can be viewed at `test_data/results.xlsx`
 - `qpcr_dir`: An example of the qpcr directory can be viewed at `test_data/qPCR_test_data`
-  - Each file in the qPCR directory should have names that end in `_$assay_$plate.txt`. An example name would be `20230901_Extraction_16S_Plate1.txt`. 
-  - These txt files should be tab seperated files with the columns `Experiment_name`, `Position`, `Sample`, and `EPF`.
+  - Each file in the qPCR directory should have names that end in `_$assay_$plate.txt`. An example name would be `20230901_Extraction_16S_Plate1.txt`.
+  - These txt files should be tab seperated files with the columns `Experiment_name`, `Position`, `Sample`, `EPF`, `Cp`, `Tm1`, `Tm2`.
 
-### plates_to_pooling() output
-The output directory will contain three .csv files and multiple .pdf files.
+### run_plates_to_pooling discarding samples
+
+During the running of the run_plates_to_pooling script, there is a section with the header `Output rxns_to_check.csv`.
+This section will create a file in your `output_dir` called `rxns_to_check.csv`.
+You can manually change the `discard` column in this file to choose replicates that you would like to keep or discard.
+The values in the `discard` column should be either `KEEP` or `DISCARD`.
+This file will be imported back into the script and your changes to the `discard` column will be merged.
+
+### run_plates_to_pooling output
+
+The output directory will contain multiple .csv and .pdf files.
+
+- `rxns_to_check.csv`: This file is explained in more detail above.
 
 - `reps_to_discard.csv`: This file has information on replicates that have been flaged for discarding.
   - `assay`: This column will have the assay of the discard replicate.
   - `plate_number`: The plate number of the discard replicate.
   - `pos`: The position on the plate of the discard replicate.
-  - `sample_replicate`: The sample number and the replicate number of the discard replicate.
+  - `sample_replicate`: The sample name and the replicate number of the discard replicate.
   - `discard`: The flag DISCARD.
+  - `sample`: The sample name.
 
-- `biomek_pooling_workbook.csv` &
-- `biomek_pooling_workbook_mamaaaaa.csv`: I currently don't understand the differernce between these files.
+- `biomek_pooling_workbook_$n.csv`: There will be one of these files for every four plates.
+  - `assay`: The assay.
+  - `plate_number`: The plate number.
+  - `SourcePosition`: The source position starting from P11 and going down to P8.
+  - `SourceWell`: The source well.
+  - `Volume`: The volume in uL.
+  - `DestinationPosition`: The destination position.
+  - `DestinationWell`: The destination well.
 
 - `raw_$assay_$plate.pdf`: Plate plots before cleaning.
 
 - `clean_$assay_$plate.pdf`: Plate plots after cleaning.
+
+- `$assay_$plate_$sampletype_minipool_plot.pdf`: Sample type specific minipool plots.
