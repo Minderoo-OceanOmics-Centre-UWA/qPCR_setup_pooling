@@ -33,7 +33,7 @@ sample_order <- function(samples) {
 read_qPCR_data <- function(file, assays, plate_numbers) {
   # loads in data
   data <- read.delim(file)
-  
+
   # get info from sample source, assay and plate id details from file name
   data$fileName <- tryCatch({
     filename <- gsub(
@@ -54,7 +54,7 @@ read_qPCR_data <- function(file, assays, plate_numbers) {
   desc_count        <- length(description[[1]])
   data$assay        <- sapply(description, "[", (desc_count - 1))
   data$plate_number <- sapply(description, "[", desc_count)
-  
+
   curr_assay <- unique(data$assay)
   curr_plate <- unique(data$plate_number)
   if (! curr_assay %in% assays) {
@@ -70,7 +70,7 @@ read_qPCR_data <- function(file, assays, plate_numbers) {
       )
     )
   }
-  
+
   if (! curr_plate %in% plate_numbers) {
     stop(
       paste0(
@@ -84,7 +84,7 @@ read_qPCR_data <- function(file, assays, plate_numbers) {
       )
     )
   }
-  
+
   return(data)
 }
 
@@ -95,7 +95,7 @@ export_plate_pdfs <- function(df,
                               prefix,
                               plate_width,
                               plate_height) {
-  
+
   for (curr_plate in plate_numbers) {
     for (curr_assay in assays) {
       pdf(
@@ -132,7 +132,7 @@ export_biomek_pooling_workbook <- function(assays,
                                            output_dir) {
   # create a blank dataframe to output loop data into
   pooling_df <- data.frame()
-  
+
   # identify variables for loop below
   minipool_calcs     <- list()
   volume_ranges      <- list()
@@ -154,7 +154,7 @@ export_biomek_pooling_workbook <- function(assays,
     DestinationWell = NULL
   )
   out_dfs            <- list()
-  
+
   # Loop that will cycle through assays, plate numbers, and sample types
   for (curr_assay in assays) {
     subs <- position_df_pool |> filter(assay == curr_assay)
@@ -162,13 +162,13 @@ export_biomek_pooling_workbook <- function(assays,
       unique_sam_types <- unique(subs[subs$plate_number == curr_plate, ]$sample_type)
       plate_num        <- plate_num + 1
       keys             <- c()
-      
+
       for (sam_type in unique_sam_types) {
         curr_key <- paste0(curr_assay, "_", curr_plate, "_", sam_type)
         keys     <- append(keys, curr_key)
-        
+
         # Minipool calculations per plate per assay
-        
+
         sub_minipool <- minipool_overview |>
           filter(assay == curr_assay) |>
           filter(plate_number == curr_plate) |>
@@ -185,9 +185,9 @@ export_biomek_pooling_workbook <- function(assays,
                                               breaks = sub_minipool))) %>%
           data.frame() %>%
           list()
-        
+
         # add volume to pool as well as info on tube destination
-        
+
         volume_ranges[curr_key] <- tibble(
           miniPool_id = 1:6,
           vol_ul = rev(
@@ -201,13 +201,8 @@ export_biomek_pooling_workbook <- function(assays,
           data.frame() %>%
           list()
       #  p_num <- substr(curr_plate, 6, nchar(curr_plate))
-        
-        if (sam_type == "sample") {
-          dwell <- paste0("A", biomek_deck_pos)
-        } else {
-          dwell <- paste0("B", biomek_deck_pos)
-        }
-        
+
+
         sam_type_num <- sam_type_num + 1
         if (sam_type_num > length(unique_sam_types)) {
           sam_type_num    <- 1
@@ -216,7 +211,7 @@ export_biomek_pooling_workbook <- function(assays,
             biomek_deck_pos    <- 1
             book               <- book + 1
             out_dfs[[book]]    <- out_df
-          
+
             out_df             <- data.frame(
               assay = NULL,
               plate_number = NULL,
@@ -229,7 +224,13 @@ export_biomek_pooling_workbook <- function(assays,
           }
         }
         sourcepos <- paste0("qPCR", biomek_deck_pos)
-        
+
+        if (sam_type == "sample") {
+          dwell <- paste0("A", biomek_deck_pos)
+        } else {
+          dwell <- paste0("B", biomek_deck_pos)
+        }
+
         minipool_calc_vols[curr_key] <-
           minipool_calcs[curr_key][[1]] %>%
           left_join(
@@ -243,7 +244,7 @@ export_biomek_pooling_workbook <- function(assays,
           ) %>%
           data.frame() %>%
           list()
-        
+
         # Set theme for plots
         theme_set(theme_bw() +
                     theme(
@@ -266,7 +267,7 @@ export_biomek_pooling_workbook <- function(assays,
           ylab("Mean EPF") +
           theme(axis.text.y = element_text(size = 5)) +
           coord_flip()
-        
+
         if (sam_type_num == length(unique_sam_types)) {
           if (length(unique_sam_types) == 1) {
             tmp_df <- rbind(
@@ -300,10 +301,10 @@ export_biomek_pooling_workbook <- function(assays,
             ) %>%
             arrange(sample_order(SourceWell))
           }
-        
+
           out_df <- rbind(out_df, tmp_df)
         }
-        
+
         pdf(paste0(output_dir, curr_key, "_minipool_plot.pdf"))
         print(minipool_plots[curr_key])
         dev.off()
@@ -312,15 +313,16 @@ export_biomek_pooling_workbook <- function(assays,
   }
   book              <- book + 1
   out_dfs[[book]]   <- out_df
-  
+
   for (i in 1:book) {
     write_csv(out_dfs[[i]], paste0(output_dir, "/biomek_pooling_workbook_", i,".csv")) 
   }
-  
+
   print(paste0("Finished! Output files in: ", output_dir))
-  
+
   return(minipool_calc_vols)
 }
+
 print_failed_rep_message <- function(rep_failed_summary, assays) {
   cat("\n")
   cat("--------------------------------------------------------------------------------")
@@ -372,7 +374,7 @@ import_position_df <- function(excel_file) {
     ignore.case = TRUE,
     value = TRUE
   )
-  
+
   # Validate number of sheets called 'position_df'
   if (length(position_sheet) == 0) {
     stop("No sheets found named 'position_df'")
@@ -380,12 +382,12 @@ import_position_df <- function(excel_file) {
   if (length(position_sheet) > 1) {
     stop("Multiple sheets found named 'position_df'")
   }
-  
+
   # Import df
   position_df   <- read_excel(excel_file, sheet = "position_df") %>%
     as.data.frame()
   colnames(position_df) <- toupper(colnames(position_df))
-  
+
   # Validata columns
   if (!("ASSAY" %in% colnames(position_df))) {
     stop("Sheet 'position_df' must contain an 'assay' column")
@@ -420,7 +422,7 @@ import_position_df <- function(excel_file) {
   colnames(position_df)[which(names(position_df) == "SAMPLE_ID")] <- "sample_id"
   colnames(position_df)[which(names(position_df) == "POS")] <- "pos"
   colnames(position_df)[which(names(position_df) == "ASSAY_PLATE_NUMBER_POS")] <- "assay_plate_number_pos"
-  
+
   return(position_df)
 }
 
@@ -431,12 +433,12 @@ import_position_df <- function(excel_file) {
 
 if (TRUE) {  
   options(dplyr.summarise.inform = FALSE)
-  
+
   # Make sure directory name doesn't already end in /
   while (endsWith(qpcr_dir, "/")) {
     qpcr_dir <- substr(qpcr_dir, 1, (nchar(qpcr_dir) - 1))
   }
-  
+
   # Make sure input files exist
   if (!file.exists(qpcr_dir)) {
     stop(
@@ -456,24 +458,24 @@ if (TRUE) {
       )
     )
   }
-  
+
   # Get all the txt file names in qpcr_dir
   fnames <- list.files(
     paste0(qpcr_dir, "/"),
     full.names = TRUE,
     pattern = ".txt"
   )
-  
+
   fnames         <- str_replace(fnames, "//", "/")
   position_df    <- import_position_df(input_file)
   plate_numbers  <- unique(position_df$plate_number)
   assays         <- unique(position_df$assay)
-  
+
   all_lc480_data <- ldply(fnames, read_qPCR_data, assays, plate_numbers)
   all_lc480_data <- change_lc480_colnames(all_lc480_data)
   all_lc480_data$sample <- str_replace(all_lc480_data$sample, "Sample", "")
   all_lc480_data$sample <- trimws(all_lc480_data$sample)
-  
+
   # Make sure qPCR data isn't missing any plates
   missing_plates <- c()
   for (plate in plate_numbers) {
@@ -486,13 +488,13 @@ if (TRUE) {
     print(missing_plates)
     stop()
   }
-  
+
   lc480_data_sample <- all_lc480_data %>%
     mutate(plate_number_pos = paste(plate_number, position, sep = ".")) %>%
     dplyr::select(-position, -plate_number) %>%
     left_join(., position_df, by = c("plate_number_pos", "assay")) %>%
     filter(., replicate != "pool")
-  
+
   lc480_data_sample$sample <- lc480_data_sample$SAMPLE
 }
 
@@ -567,7 +569,7 @@ for (curr_assay in assays) {
     tm1_max    <- tm1_mean + tm1_sd
     rep_failed[rep_failed$assay == curr_assay & rep_failed$plate_number == curr_plate, "tm1_sd"]   <- sd(na.omit(tm1s))
     rep_failed[rep_failed$assay == curr_assay & rep_failed$plate_number == curr_plate, "tm1_mean"] <- mean(na.omit(tm1s))
-    
+
     rep_failed[rep_failed$assay == curr_assay & rep_failed$plate_number == curr_plate, ] <- rep_failed[rep_failed$assay == curr_assay & rep_failed$plate_number == curr_plate, ] %>%
       mutate(
         tm1_outside_sd = case_when(
@@ -625,7 +627,7 @@ checked_runs <- read.csv(paste0(output_dir, "rxns_to_check.csv"))
 for (row in 1:nrow(checked_runs)) {
   id <- checked_runs[row, "assay_plate_number_pos"]
   disc <- toupper(checked_runs[row, "discard"])
-  
+
   if (disc != "KEEP" & disc != "DISCARD") {
     while (TRUE) {
       print(paste0("discard value of ", disc, " is not valid for ", id))
@@ -641,7 +643,7 @@ for (row in 1:nrow(checked_runs)) {
       }
     }
   }
-  
+
   rep_failed$discard[rep_failed$assay_plate_number_pos == id] <- disc
 }
 
