@@ -1,0 +1,7 @@
+assay,plate_number,pos,sample_replicate,discard,sample
+MiFish,Plate1,F13,N_9_2-3,DISCARD,N_9_2
+MiFish,Plate3,M17,N_40_1-1,DISCARD,N_40_1
+MiFish,Plate4,E19,ABv9_AUV06_5-1,DISCARD,ABv9_AUV06_5
+16S,Plate4,L5,ABv9_WW_3-3,DISCARD,ABv9_WW_3
+MiFish,Plate4,O17,ABv9_AUV06_2-1,DISCARD,ABv9_AUV06_2
+MiFish,Plate5,E19,ABv9_WA181e_1-1,DISCARD,ABv9_WA181e_1

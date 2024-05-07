@@ -16,7 +16,7 @@ suppressMessages(library("ggplate"))
 ##########################################################
 
 input_file   <- "test_data/output/output_df.xlsx"
-qpcr_dir     <- "test_data/input/qPCR_test_data"
+qpcr_dir     <- "test_data/input/qPCR_test_data/"
 output_dir   <- "test_data/output/"
 plate_width  <- 12
 plate_height <- 8
@@ -143,7 +143,7 @@ export_biomek_pooling_workbook <- function(assays,
   plate_num          <- 0
   book               <- 0
   sam_type_num       <- 0
-  biomek_deck_pos    <- 11
+  biomek_deck_pos    <- 1
   out_df             <- data.frame(
     assay = NULL,
     plate_number = NULL,
@@ -200,20 +200,20 @@ export_biomek_pooling_workbook <- function(assays,
         ) %>%
           data.frame() %>%
           list()
-        p_num <- substr(curr_plate, 6, nchar(curr_plate))
+      #  p_num <- substr(curr_plate, 6, nchar(curr_plate))
         
         if (sam_type == "sample") {
-          dwell <- paste0("A", p_num)
+          dwell <- paste0("A", biomek_deck_pos)
         } else {
-          dwell <- paste0("B", p_num)
+          dwell <- paste0("B", biomek_deck_pos)
         }
         
         sam_type_num <- sam_type_num + 1
         if (sam_type_num > length(unique_sam_types)) {
           sam_type_num    <- 1
-          biomek_deck_pos <- biomek_deck_pos - 1
-          if (biomek_deck_pos < 8) {
-            biomek_deck_pos    <- 11
+          biomek_deck_pos <- biomek_deck_pos + 1
+          if (biomek_deck_pos > 4) {
+            biomek_deck_pos    <- 1
             book               <- book + 1
             out_dfs[[book]]    <- out_df
           
@@ -238,7 +238,7 @@ export_biomek_pooling_workbook <- function(assays,
             by = "miniPool_id"
           ) %>%
           mutate(
-            DestinationPosition = "P16",
+            DestinationPosition = "PoolTubes",
             DestinationWell = dwell
           ) %>%
           data.frame() %>%
@@ -321,7 +321,6 @@ export_biomek_pooling_workbook <- function(assays,
   
   return(minipool_calc_vols)
 }
-
 print_failed_rep_message <- function(rep_failed_summary, assays) {
   cat("\n")
   cat("--------------------------------------------------------------------------------")
@@ -678,7 +677,7 @@ write_csv(reps_to_discard, paste0(output_dir, "/reps_to_discard.csv"))
 ##########################################################
 
 clean_lc480_data <- rep_failed %>%
-  dplyr::group_by(assay, sample_id) %>%
+  dplyr::group_by(assay, sample) %>%
   filter(sum(discard == "KEEP") >= 2)
 
 
