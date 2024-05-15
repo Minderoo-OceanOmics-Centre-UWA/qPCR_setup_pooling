@@ -774,13 +774,16 @@ minipool_overview <-   position_df_pool %>%
 
 minipool_calc_vols <- export_biomek_pooling_workbook(assays, plate_numbers, position_df_pool, minipool_overview, output_dir)
 
-# summary with volumes of sample/controls and volume of beads to add for cleanup (1.8 x volume)
-## add the total number of samples in each tube 
+# Minipool summaries including final volume in pooled tube & the number of samples/controls in each tube
 minipool_vols_df <- do.call(rbind.data.frame, minipool_calc_vols)
 minipool_vols_summary <- minipool_vols_df %>%
   group_by(assay, plate_number, sample_type, DestinationWell) %>%
-  dplyr::summarise(total_vol_ul = sum(vol_ul)) %>%
+  dplyr::summarise(
+    total_vol_ul = sum(vol_ul),
+    count_samples = n_distinct(SAMPLE)) %>%
   ungroup() %>%
-  mutate(assay.plate_number.sample_type = paste(assay, plate_number, sample_type, sep = "."),bead_vol = total_vol_ul *1.8, tube_vol = total_vol_ul + bead_vol )
+  mutate(assay.plate_number.sample_type = paste(assay, plate_number, sample_type, sep = ".") )
+
+write_csv(minipool_vols_summary, paste0(output_dir, "/minipool_summary.csv"))
 
 #confirm final tube volumes do not exceed 1.5 mL (or 1500 uL)
