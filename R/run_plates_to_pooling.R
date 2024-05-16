@@ -270,9 +270,7 @@ export_biomek_pooling_workbook <- function(assays,
 
         if (sam_type_num == length(unique_sam_types)) {
           if (length(unique_sam_types) == 1) {
-            tmp_df <- rbind(
-              minipool_calc_vols[keys[1]][[1]],
-            ) %>%
+            tmp_df <- minipool_calc_vols[keys[1]][[1]] %>%
             mutate(SourcePosition = sourcepos) %>%
             dplyr::select(
               assay,
