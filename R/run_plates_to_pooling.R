@@ -15,9 +15,9 @@ suppressMessages(library("ggplate"))
 # Variables
 ##########################################################
 
-input_file   <- "test_data/output/output_df.xlsx"
-qpcr_dir     <- "test_data/input/qPCR_test_data/"
-output_dir   <- "test_data/output/"
+input_file   <- "R/output/EX&BC_df_fixed.xlsx"
+qpcr_dir     <- "R/input/qPCR_data/"
+output_dir   <- "R/output/"
 plate_width  <- 12
 plate_height <- 8
 
@@ -517,11 +517,11 @@ export_plate_pdfs(
 
 # The plots are outputed into the output_dir specified as .pdf but let's look at one of those plots in R studio. 
 plate_plot_epf <- lc480_data_sample %>%
-  filter(plate_number == "Plate1" & assay == "16S") %>%
+  filter(plate_number == "Plate2" & assay == "16S") %>%
   plate_plot(
     position = pos,
-    value = epf,
-    label = round(epf, digits = 1),
+    value = cp,
+    label = round(cp, digits = 1),
     plate_size = (plate_width * 2) * (plate_height * 2),
     title = paste0(unique(.$plate_number), " ", unique(.$assay))
   )
@@ -539,7 +539,7 @@ rep_failed <- lc480_data_sample %>%
   mutate(
     discard = case_when(
       replicate == "pool" ~ "NA",
-      (sample_type == "sample" & epf < 2) | (sample_type == "sample" & cp > 40) ~ "DISCARD",
+      (sample_type == "sample" & epf < 2) | (sample_type == "sample" & cp >= 40) ~ "DISCARD",
       TRUE ~ "KEEP"
     )
   ) %>%
@@ -622,7 +622,7 @@ write.csv(row.names = FALSE, rep_failed[(rep_failed$tm1_outside_sd == TRUE | rep
 # Import rxns_to_check.csv and merge discard column
 ######################################################
 
-checked_runs <- read.csv(paste0(output_dir, "rxns_to_check.csv"))
+checked_runs <- read.csv(paste0(output_dir, "rxns_checked.csv"))
 
 for (row in 1:nrow(checked_runs)) {
   id <- checked_runs[row, "assay_plate_number_pos"]
@@ -697,7 +697,7 @@ export_plate_pdfs(
 
 # Let's look at one of those plots in R studio
 clean_plate_plot_epf <- clean_lc480_data %>%
-  filter(plate_number == "Plate5" & assay == "MiFish") %>%
+  filter(plate_number == "Plate1" & assay == "12S") %>%
   plate_plot(
     position = pos,
     value = epf,
