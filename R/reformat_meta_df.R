@@ -54,6 +54,7 @@ reformat_meta_df <- function(meta_df,
                 each = length(assays)
             ),
     ]
+
     meta_df$ASSAY      <- rep(assays, length.out = nrow(meta_df))
     row.names(meta_df) <- NULL
 
@@ -100,7 +101,7 @@ reformat_meta_df <- function(meta_df,
         # are used to track the number of plates per fw primer
         # We are tracking this because we increment the rv primer
         # before we start incrementing the fw primer
-        plate_count_per_fws <- 0
+        plate_count_per_fws <- 1
         curr_fw_plate_count <- 1
 
         # These next four variables are used to splice
@@ -120,6 +121,9 @@ reformat_meta_df <- function(meta_df,
             for (fw in fw_primers[fw_left:fw_right]) {
                 well_row_index <- 0
                 well_col       <- well_col + 1
+                
+                
+                #print(meta_df[meta_df$SAMPLEID == "ABv9_DC_3", ])
 
                 for (rv in rv_primers[rv_left:rv_right]) {
                     sample_i <- sample_i + 1
@@ -193,6 +197,8 @@ reformat_meta_df <- function(meta_df,
                             nchar(meta_df[meta_row, "RV_FULL_SEQ"])
                         )
                     }
+                    
+                    
                 }
                 # Stop looping through fw primers. We ran out of samples.
                 if (stop) {
@@ -205,26 +211,29 @@ reformat_meta_df <- function(meta_df,
                 break
             }
 
-            #
-            # TODO: I may need to test this more to make sure it works
-            #
             # We still have rv primers left
             if (rv_right < rv_count) {
                 rv_left             <- rv_left + plate_height
                 rv_right            <- rv_right + plate_height
                 plate_count_per_fws <- plate_count_per_fws + 1
+                
+                curr_fw_plate_count <- curr_fw_plate_count + 1
 
             # We ran out of rv primers
             } else {
                 # We aren't up to the next fw primer yet
-                if (curr_fw_plate_count <= plate_count_per_fws) {
+                if (curr_fw_plate_count < plate_count_per_fws) {
+                    
                     curr_fw_plate_count <- curr_fw_plate_count + 1
 
                 # We are up to the next fw primer
                 } else {
-                    curr_fw_plate_count <- 0
+                    
+                    curr_fw_plate_count <- 1
                     fw_left  <- fw_left + plate_width
                     fw_right <- fw_right + plate_width
+                    rv_left  <- 1
+                    rv_right <- plate_height
                 }
             }
         }
