@@ -49,7 +49,7 @@ assays          <- c("16S", "MiFish")
 run             <- "run_1"
 plate_width     <- 12
 plate_height    <- 8
-controls        <- c("ITC", "NTC")
+controls        <- c("NTC", "ITC")
 control_pattern <- "WC|DI|EB|BC|NTC|ITC|Cont|BL"
 
 meta_to_plates(
@@ -72,7 +72,7 @@ meta_to_plates(
 - `run`: The name of the run. This should match the sequencing run name found in the input file.
 - `plate_width`: The number of columns per plate. Default = 12.
 - `plate_height`: The number of rows per plate. Default = 8. Max allowed = 13.
-- `controls`: A vector of control samples that will be added at the end of each plate. Default = c("ITC", "NTC").
+- `controls`: A vector of control samples that will be added at the end of each plate. Default = c("NTC", "ITC").
 - `control_pattern`: A string that will be used to flag samples as control samples. Default = "WC|DI|EB|BC|NTC|ITC|Cont|BL". This default value means that any sample containing "WC", "DI", "EB", "BC", "NTC", "ITC", "Cont", or "BL" will be flagged as a control sample.
 
 ### meta_to_plates() input
