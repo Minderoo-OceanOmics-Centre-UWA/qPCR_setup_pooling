@@ -16,7 +16,7 @@ meta_to_plates <- function(input_file,
                            run,
                            plate_width = 12,
                            plate_height = 8,
-                           controls = c("ITC", "NTC"),
+                           controls = c("NTC", "ITC"),
                            control_pattern = "WC|DI|EB|BC|NTC|ITC|Cont|BL") {
 
     # Import our data
