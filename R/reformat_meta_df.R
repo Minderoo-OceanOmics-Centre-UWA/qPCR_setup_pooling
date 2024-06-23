@@ -215,7 +215,6 @@ reformat_meta_df <- function(meta_df,
             if (rv_right < rv_count) {
                 rv_left             <- rv_left + plate_height
                 rv_right            <- rv_right + plate_height
-                plate_count_per_fws <- plate_count_per_fws + 1
                 
                 curr_fw_plate_count <- curr_fw_plate_count + 1
 
