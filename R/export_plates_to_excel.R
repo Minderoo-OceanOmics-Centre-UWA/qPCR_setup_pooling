@@ -106,13 +106,15 @@ export_plates_to_excel <- function(assays,
         "assay",
         "fw_no",
         "rv_no",
-        "fw_tag",
-        "rv_tag",
+        "fw_index",
+        "rv_index",
         "fw_primer",
         "rv_primer",
         "plate",
         "well"
     )
+    meta_df$fastq_1 <- NA
+    meta_df$fastq_2 <- NA
     writeData(
         wb,
         sheet = "metadata",
@@ -120,6 +122,18 @@ export_plates_to_excel <- function(assays,
         startRow = 1,
         startCol = 1
     )
+    
+    for (assay in assays) {
+      addWorksheet(wb, paste0("metadata_", assay))
+      
+      writeData(
+        wb,
+        sheet = paste0("metadata_", assay),
+        meta_df[meta_df$assay == assay, ],
+        startRow = 1,
+        startCol = 1
+      )
+    }
 
     colnames(position_df) <- c(
         "sample",
