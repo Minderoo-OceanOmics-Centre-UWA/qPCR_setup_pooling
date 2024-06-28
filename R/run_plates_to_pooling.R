@@ -245,6 +245,9 @@ export_biomek_pooling_workbook <- function(assays,
           data.frame() %>%
           list()
 
+        minipool_calc_vols[curr_key][[1]] <- minipool_calc_vols[curr_key][[1]] %>%
+          mutate(DestinationWell = ifelse(grepl("^ITC_", SAMPLE), "C1", DestinationWell))
+
         # Set theme for plots
         theme_set(theme_bw() +
                     theme(
