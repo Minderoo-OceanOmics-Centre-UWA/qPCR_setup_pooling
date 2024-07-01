@@ -1,4 +1,12 @@
 ##########################################################
+# Libraries
+##########################################################
+
+library(readr)
+library(stringr)
+
+
+##########################################################
 # Variables
 ##########################################################
 
@@ -39,6 +47,12 @@ for (assay in assays) {
     epf$Position_Sample          <- rownames(epf)
     epf[c("Position", "Sample")] <- str_split_fixed(epf$Position_Sample, ": ", 2)
     epf                          <- epf[, c("Position", "Sample", "EPF")]
+
+    # Add experiment name
+    exprmnt             <- str_split_fixed(cp_file, assay, 2)[1] # get date and voyage
+    exprmnt             <- sub('.*\\/', '', exprmnt)             # get everything after last '/'
+    exprmnt             <- gsub('.{1}$', '', exprmnt)            # remove last '_'
+    epf$Experiment_name <- paste0(exprmnt, "_", assay, "_", curr_plate)
     
     # Import tm and keep only Position, Tm1, and Tm2
     print(paste0("Importing: ", tm_file))
