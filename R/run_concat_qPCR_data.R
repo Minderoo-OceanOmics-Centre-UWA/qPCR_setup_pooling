@@ -52,6 +52,15 @@ for (assay in assays) {
     exprmnt             <- str_split_fixed(cp_file, assay, 2)[1] # get date and voyage
     exprmnt             <- sub('.*\\/', '', exprmnt)             # get everything after last '/'
     exprmnt             <- gsub('.{1}$', '', exprmnt)            # remove last '_'
+    exprmnt_split       <- str_split(exprmnt, "_")
+    if (length(exprmnt_split[[1]]) == 3) {
+      exprmnt             <- paste0(exprmnt_split[[1]][1], "_", exprmnt_split[[1]][2], exprmnt_split[[1]][3])
+    } else if (length(exprmnt_split[[1]]) == 2) {
+      exprmnt             <- paste0(exprmnt_split[[1]][1], "_", exprmnt_split[[1]][2])
+    } else {
+      stop("Your filename isn't valid. The experiment name must contain two or three underscores (e.g., '220912_SWWAV11', or '220912_SWWA_V11').")
+    }
+    
     epf$Experiment_name <- paste0(exprmnt, "_", assay, "_", curr_plate)
     
     # Import tm and keep only Position, Tm1, and Tm2
@@ -62,9 +71,13 @@ for (assay in assays) {
     
     # Merge all data, then export results
     output          <- merge(merge(epf, cp, by = "Position"), tm, by = "Position")
-    output_filename <- tail(strsplit(cp_file, "/")[[1]], n = 1)
-    output_filename <- gsub("Cp", "output", output_filename)
+    #output_filename <- tail(strsplit(cp_file, "/")[[1]], n = 1)
+    #output_filename <- gsub("Cp", "output", output_filename)
+    output_filename <- paste0(exprmnt, "_", assay, "_", curr_plate, ".txt")
     print(paste0("Exporting data to: ", output_dir, output_filename))
+    
+    #Experiment_name	Position	Sample	EPF	Cp	Tm1	Tm2
+    output <- output[, c("Experiment_name", "Position", "Sample", "EPF", "Cp", "Tm1", "Tm2")]
     write.table(output, paste0(output_dir, output_filename))
   }
 }
