@@ -144,6 +144,7 @@ export_biomek_pooling_workbook <- function(assays,
   book               <- 0
   sam_type_num       <- 0
   biomek_deck_pos    <- 1
+  assay_num          <- 0
   out_df             <- data.frame(
     assay = NULL,
     plate_number = NULL,
@@ -157,7 +158,8 @@ export_biomek_pooling_workbook <- function(assays,
 
   # Loop that will cycle through assays, plate numbers, and sample types
   for (curr_assay in assays) {
-    subs <- position_df_pool |> filter(assay == curr_assay)
+    subs      <- position_df_pool |> filter(assay == curr_assay)
+    assay_num <- assay_num + 1
     for (curr_plate in plate_numbers) {
       unique_sam_types <- unique(subs[subs$plate_number == curr_plate, ]$sample_type)
       plate_num        <- plate_num + 1
@@ -246,7 +248,7 @@ export_biomek_pooling_workbook <- function(assays,
           list()
 
         minipool_calc_vols[curr_key][[1]] <- minipool_calc_vols[curr_key][[1]] %>%
-          mutate(DestinationWell = ifelse(grepl("^ITC_", SAMPLE), "C1", DestinationWell))
+          mutate(DestinationWell = ifelse(grepl("^ITC_", SAMPLE), paste0("C", assay_num), DestinationWell))
 
         # Set theme for plots
         theme_set(theme_bw() +
