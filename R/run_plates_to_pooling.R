@@ -20,6 +20,7 @@ qpcr_dir     <- "test_data/input/qPCR_test_data/"
 output_dir   <- "test_data/output/"
 plate_width  <- 12
 plate_height <- 8
+assays       <- c("16S", "MiFish")
 
 
 ##########################################################
@@ -472,7 +473,6 @@ if (TRUE) {
   fnames         <- str_replace(fnames, "//", "/")
   position_df    <- import_position_df(input_file)
   plate_numbers  <- unique(position_df$plate_number)
-  assays         <- unique(position_df$assay)
 
   all_lc480_data <- ldply(fnames, read_qPCR_data, assays, plate_numbers)
   all_lc480_data <- change_lc480_colnames(all_lc480_data)
