@@ -99,7 +99,7 @@ export_plates_to_excel <- function(assays,
         }
     }
 
-    # We can't forget the add the metadata and position df
+    # We can't forget to add the metadata and position df
     colnames(meta_df) <- c(
         "sample",
         "sequencing_run",
@@ -111,7 +111,8 @@ export_plates_to_excel <- function(assays,
         "fw_primer",
         "rv_primer",
         "plate",
-        "well"
+        "well",
+        "sample_type"
     )
     meta_df$fastq_1 <- NA
     meta_df$fastq_2 <- NA

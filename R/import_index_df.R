@@ -46,7 +46,7 @@ import_index_df <- function(excel_file, assays) {
             } %>%
             toupper()
 
-        curr_index_df <- curr_index_df %>% select(-contains("..."))
+        curr_index_df <- curr_index_df %>% dplyr::select(-contains("..."))
         
         # Validate index sheet columns
         if (!("PRIMERNUM" %in% colnames(curr_index_df))) {

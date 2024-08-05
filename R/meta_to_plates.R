@@ -24,7 +24,7 @@ meta_to_plates <- function(input_file,
     index_df <- import_index_df(input_file, assays)
 
     # Remove invisible columns in Excel
-    meta_df  <- meta_df %>% select(-contains("..."))
+    meta_df  <- meta_df %>% dplyr::select(-contains("..."))
     # Remove control samples that shouldn't be in the input metadata
     for (control in controls) {
         meta_df <- meta_df[!grepl(control, meta_df$SAMPLEID),]
@@ -163,6 +163,32 @@ meta_to_plates <- function(input_file,
                 last_rv     <- last_rv + plate_height
             }
         }
+    }
+    
+    meta_df$sample_type <- NA
+    for (row in 1:nrow(meta_df)) {
+      sample <- meta_df[row, "SAMPLEID"]
+      sample_type <- "sample"
+      
+      if (grepl("WC", sample, fixed = TRUE)) {
+        sample_type <- "WC_Control"
+      } else if (grepl("DI", sample, fixed = TRUE)) {
+        sample_type <- "DI_Control"
+      } else if (grepl("EB", sample, fixed = TRUE)) {
+        sample_type <- "EB_Control"
+      } else if (grepl("BC", sample, fixed = TRUE)) {
+        sample_type <- "BC_Control"
+      } else if (grepl("NTC", sample, fixed = TRUE)) {
+        sample_type <- "NTC_Control"
+      } else if (grepl("ITC", sample, fixed = TRUE)) {
+        sample_type <- "ITC_Control"
+      } else if (grepl("Cont", sample, fixed = TRUE)) {
+        sample_type <- "Cont_Control"
+      } else if (grepl("BL", sample, fixed = TRUE)) {
+        sample_type <- "BL_Control"
+      }
+      
+      meta_df[row, "sample_type"] <- sample_type
     }
 
     export_plates_to_excel(
