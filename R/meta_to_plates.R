@@ -166,26 +166,16 @@ meta_to_plates <- function(input_file,
     }
     
     meta_df$sample_type <- NA
+    control_vect        <- str_split_1(control_pattern, "\\|")
     for (row in 1:nrow(meta_df)) {
-      sample <- meta_df[row, "SAMPLEID"]
+      sample      <- meta_df[row, "SAMPLEID"]
       sample_type <- "sample"
       
-      if (grepl("WC", sample, fixed = TRUE)) {
-        sample_type <- "WC_Control"
-      } else if (grepl("DI", sample, fixed = TRUE)) {
-        sample_type <- "DI_Control"
-      } else if (grepl("EB", sample, fixed = TRUE)) {
-        sample_type <- "EB_Control"
-      } else if (grepl("BC", sample, fixed = TRUE)) {
-        sample_type <- "BC_Control"
-      } else if (grepl("NTC", sample, fixed = TRUE)) {
-        sample_type <- "NTC_Control"
-      } else if (grepl("ITC", sample, fixed = TRUE)) {
-        sample_type <- "ITC_Control"
-      } else if (grepl("Cont", sample, fixed = TRUE)) {
-        sample_type <- "Cont_Control"
-      } else if (grepl("BL", sample, fixed = TRUE)) {
-        sample_type <- "BL_Control"
+      for (i in control_vect) {
+        if (grepl(i, sample, fixed = TRUE)) {
+          sample_type <- paste0(i, "_Control")
+          break
+        }
       }
       
       meta_df[row, "sample_type"] <- sample_type
