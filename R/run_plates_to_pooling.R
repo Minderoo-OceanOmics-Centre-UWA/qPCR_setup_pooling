@@ -430,6 +430,30 @@ import_position_df <- function(excel_file) {
   return(position_df)
 }
 
+import_samplesheet_df <- function(excel_file, assay) {
+  excel_sheets   <- excel_sheets(excel_file)
+  metadata_sheet <- grep(
+    glob2rx(paste0("metadata_", assay)),
+    excel_sheets,
+    ignore.case = TRUE,
+    value = TRUE
+  )
+  
+  # Validate number of sheets called 'position_df'
+  if (length(metadata_sheet) == 0) {
+    stop(paste0("No sheets found named 'metadata_'", assay, "'"))
+  }
+  if (length(metadata_sheet) > 1) {
+    stop(paste0("Multiple sheets found named 'metadata_'", assay, "'"))
+  }
+  
+  # Import df
+  metadata_df   <- read_excel(excel_file, sheet = paste0("metadata_", assay)) %>%
+    as.data.frame()
+  
+  return(metadata_df)
+}
+
 
 ##########################################################
 # Import data
@@ -790,3 +814,14 @@ minipool_vols_summary <- minipool_vols_df %>%
 write_csv(minipool_vols_summary, paste0(output_dir, "/minipool_summary.csv"))
 
 #confirm final tube volumes do not exceed 1.5 mL (or 1500 uL)
+
+# Create samplesheets with info on discarded samples
+for (assay in assays) {
+  meta_df <- import_samplesheet_df(input_file, assay)
+  meta_df$discarded <- FALSE
+  curr_disc_sams <- discarded_samples[discarded_samples$assay == assay, ]
+  
+  meta_df$discarded <- ifelse(meta_df$sample %in% curr_disc_sams$sample, TRUE, meta_df$discarded)
+  
+  write_csv(meta_df, paste0(output_dir, "/samplesheet_", assay, ".csv"))
+}
