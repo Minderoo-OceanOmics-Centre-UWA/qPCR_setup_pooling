@@ -802,7 +802,7 @@ minipool_overview <-   position_df_pool %>%
 minipool_calc_vols <- export_biomek_pooling_workbook(assays, plate_numbers, position_df_pool, minipool_overview, output_dir)
 
 # Minipool summaries including final volume in pooled tube & the number of samples/controls in each tube
-minipool_vols_df <- do.call(rbind.data.frame, minipool_calc_vols)
+minipool_vols_df      <- do.call(rbind.data.frame, minipool_calc_vols)
 minipool_vols_summary <- minipool_vols_df %>%
   group_by(assay, plate_number, sample_type, DestinationWell) %>%
   dplyr::summarise(
@@ -817,9 +817,9 @@ write_csv(minipool_vols_summary, paste0(output_dir, "/minipool_summary.csv"))
 
 # Create samplesheets with info on discarded samples
 for (assay in assays) {
-  meta_df <- import_samplesheet_df(input_file, assay)
+  meta_df           <- import_samplesheet_df(input_file, assay)
   meta_df$discarded <- FALSE
-  curr_disc_sams <- discarded_samples[discarded_samples$assay == assay, ]
+  curr_disc_sams    <- discarded_samples[discarded_samples$assay == assay, ]
   
   meta_df$discarded <- ifelse(meta_df$sample %in% curr_disc_sams$sample, TRUE, meta_df$discarded)
   
