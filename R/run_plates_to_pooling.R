@@ -33,7 +33,13 @@ sample_order <- function(samples) {
 
 read_qPCR_data <- function(file, assays, plate_numbers) {
   # loads in data
-  data <- read.delim(file, sep = " ")
+  data <- tryCatch({
+    data <- read.delim(file, sep = " ")
+    return(data)
+  }, error = function(e){
+    data <- read.delim(file, sep = "\t")
+    return(data)
+  })
 
   # get info from sample source, assay and plate id details from file name
   data$fileName <- tryCatch({
