@@ -35,10 +35,10 @@ read_qPCR_data <- function(file, assays, plate_numbers) {
   # loads in data
   data <- tryCatch({
     data <- read.delim(file, sep = " ")
-    return(data)
+    data.frame(data)
   }, error = function(e){
     data <- read.delim(file, sep = "\t")
-    return(data)
+    data.frame(data)
   })
 
   # get info from sample source, assay and plate id details from file name
