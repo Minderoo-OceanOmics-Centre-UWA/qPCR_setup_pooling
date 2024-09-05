@@ -42,21 +42,11 @@ read_qPCR_data <- function(file, assays, plate_numbers) {
   })
 
   # get info from sample source, assay and plate id details from file name
-  data$fileName <- tryCatch({
-    filename <- gsub(
-      ".txt",
-      "",
-      str_split(file, "\\/\\/", simplify = TRUE)[, 2]
-    )
-    return(filename)
-  }, error = function(e){
-    filename <- gsub(
-      ".txt",
-      "",
-      str_split(file, "\\/\\/", simplify = TRUE)[, 1]
-    )
-    return(filename)
-  })
+  data$fileName <- gsub(
+    ".txt",
+    "",
+    basename(file)
+  )
   description       <- strsplit(data$fileName, "_")
   desc_count        <- length(description[[1]])
   data$assay        <- sapply(description, "[", (desc_count - 1))
