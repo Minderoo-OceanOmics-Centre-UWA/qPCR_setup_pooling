@@ -146,7 +146,7 @@ reformat_meta_df <- function(meta_df,
                     meta_row <- which(
                         meta_df$SAMPLEID == sample_ids[sample_i] &
                         meta_df$ASSAY == assay
-                    )
+                    )[1]
                     meta_df[meta_row, "FW_NO"]       <- fw
                     meta_df[meta_row, "RV_NO"]       <- rv
                     meta_df[meta_row, "FW_TAG"]      <- subset(
