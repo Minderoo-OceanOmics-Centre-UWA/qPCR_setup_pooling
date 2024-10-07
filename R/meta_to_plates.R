@@ -9,6 +9,7 @@ source("R/export_plates_to_excel.R")
 suppressMessages(library(tidyverse))
 suppressMessages(library(readxl))
 suppressMessages(library(openxlsx))
+suppressMessages(library(plyr))
 
 meta_to_plates <- function(input_file,
                            output_file,
