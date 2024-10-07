@@ -14,6 +14,7 @@ reformat_meta_df <- function(meta_df,
 
     # Add control samples to meta_df.
     # We need to add the control samples at the end of each plate.
+    tmp_df <- meta_df
     left_of_controls <- sample_count_per_plate
     for (plate_num in 1:plate_count) {
         control_rows <- data.frame(
@@ -25,14 +26,14 @@ reformat_meta_df <- function(meta_df,
         # samples to fill the plate
         if (left_of_controls > nrow(meta_df)) {
             left_of_controls <- nrow(meta_df)
-            meta_df <- rbind(meta_df, control_rows)
+            tmp_df <- rbind.fill(meta_df, control_rows)
 
         # This will be true for most plates
         } else {
-            meta_df <- rbind(
-                meta_df[1:left_of_controls, ],
+            tmp_df <- rbind.fill(
+                tmp_df[1:left_of_controls, ],
                 control_rows,
-                meta_df[(left_of_controls + 1):nrow(meta_df), ]
+                tmp_df[(left_of_controls + 1):nrow(tmp_df), ]
             )
         }
 
@@ -42,6 +43,7 @@ reformat_meta_df <- function(meta_df,
             sample_count_per_plate
         )
     }
+    meta_df <- tmp_df
 
     sample_ids <- meta_df$SAMPLEID
     sample_count <- length(sample_ids)
