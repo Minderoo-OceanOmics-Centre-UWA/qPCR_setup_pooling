@@ -107,8 +107,6 @@ export_plates_to_excel <- function(assays,
     colnames(meta_df)[colnames(meta_df) == 'RV_NO'] <- 'rv_no'
     colnames(meta_df)[colnames(meta_df) == 'FW_TAG'] <- 'fw_index'
     colnames(meta_df)[colnames(meta_df) == 'RV_TAG'] <- 'rv_index'
-    colnames(meta_df)[colnames(meta_df) == 'FW_FULL_SEQ'] <- 'fw_primer'
-    colnames(meta_df)[colnames(meta_df) == 'RV_FULL_SEQ'] <- 'rv_primer'
     colnames(meta_df)[colnames(meta_df) == 'PLATE'] <- 'plate'
     colnames(meta_df)[colnames(meta_df) == 'WELL'] <- 'well'
   
