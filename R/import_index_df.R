@@ -3,7 +3,6 @@ import_index_df <- function(excel_file, assays) {
 
     index_df     <- data.frame(
         PRIMERNUM = character(),
-        PRIMERSEQ = character(),
         TAGS = character(),
         FWRV = character(),
         stringsAsFactors = FALSE
@@ -58,15 +57,6 @@ import_index_df <- function(excel_file, assays) {
                 )
             )
         }
-        if (!("PRIMERSEQ" %in% colnames(curr_index_df))) {
-            stop(
-                paste0(
-                    "Sheet '",
-                    curr_index_sheet,
-                    "' must contain a 'primer_seq' column"
-                )
-            )
-        }
         if (!("TAGS" %in% colnames(curr_index_df))) {
             stop(
                 paste0(
@@ -82,36 +72,6 @@ import_index_df <- function(excel_file, assays) {
                     "Sheet '",
                     curr_index_sheet,
                     "' must contain a 'fw_rv' column"
-                )
-            )
-        }
-
-        # Make sure there is no duplicate primers
-        if (length(curr_index_df$PRIMERNUM) !=
-            length(unique(curr_index_df$PRIMERNUM))) {
-            duplicates <- curr_index_df[
-                duplicated(curr_index_df$PRIMERNUM) |
-                duplicated(curr_index_df$PRIMERNUM, fromLast = TRUE),
-                "PRIMER_#"
-            ]
-            stop(
-                paste0(
-                    "You can't have duplicate primers. Duplicates: ",
-                    duplicates
-                )
-            )
-        }
-        if (length(curr_index_df$PRIMERSEQ) !=
-        length(unique(curr_index_df$PRIMERSEQ))) {
-            duplicates <- curr_index_df[
-                duplicated(curr_index_df$PRIMERSEQ) |
-                duplicated(curr_index_df$PRIMERSEQ, fromLast = TRUE),
-                "PRIMER_SEQ"
-            ]
-            stop(
-                paste0(
-                    "You can't have duplicate primer sequences. Duplicates: ",
-                    duplicates
                 )
             )
         }
