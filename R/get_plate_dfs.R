@@ -59,23 +59,31 @@ get_plate_dfs <- function(first_fw,
                 break
             }
             curr_sample     <- sample_ids[sample_i]
-
-            # Add the current sample to the current cell
-            plate[row, col] <- curr_sample
-
-            # Each sample should be added to the big plates four times
-            big_plate[paste0(row, "_1"), paste0(col, "_1")] <- paste0(
+            
+            if (grepl("^FAKESAMPLE", curr_sample)) {
+              plate[row, col] <- NA
+              big_plate[paste0(row, "_1"), paste0(col, "_1")] <- NA
+              big_plate[paste0(row, "_1"), paste0(col, "_2")] <- NA
+              big_plate[paste0(row, "_2"), paste0(col, "_1")] <- NA
+              big_plate[paste0(row, "_2"), paste0(col, "_2")] <- NA
+            } else {
+              # Add the current sample to the current cell
+              plate[row, col] <- curr_sample
+              
+              # Each sample should be added to the big plates four times
+              big_plate[paste0(row, "_1"), paste0(col, "_1")] <- paste0(
                 curr_sample, "-1"
-            )
-            big_plate[paste0(row, "_1"), paste0(col, "_2")] <- paste0(
+              )
+              big_plate[paste0(row, "_1"), paste0(col, "_2")] <- paste0(
                 curr_sample, "-2"
-            )
-            big_plate[paste0(row, "_2"), paste0(col, "_1")] <- paste0(
+              )
+              big_plate[paste0(row, "_2"), paste0(col, "_1")] <- paste0(
                 curr_sample, "-3"
-            )
-            big_plate[paste0(row, "_2"), paste0(col, "_2")] <- paste0(
+              )
+              big_plate[paste0(row, "_2"), paste0(col, "_2")] <- paste0(
                 curr_sample, "-pool"
-            )
+              ) 
+            }
 
             sample_i <- sample_i + 1
         }

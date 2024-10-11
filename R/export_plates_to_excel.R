@@ -100,20 +100,19 @@ export_plates_to_excel <- function(assays,
     }
 
     # We can't forget to add the metadata and position df
-    colnames(meta_df) <- c(
-        "sample",
-        "sequencing_run",
-        "assay",
-        "fw_no",
-        "rv_no",
-        "fw_index",
-        "rv_index",
-        "fw_primer",
-        "rv_primer",
-        "plate",
-        "well",
-        "sample_type"
-    )
+    colnames(meta_df)[colnames(meta_df) == 'SAMPLEID'] <- 'sample'
+    colnames(meta_df)[colnames(meta_df) == 'SEQUENCINGRUN'] <- 'sequencing_run'
+    colnames(meta_df)[colnames(meta_df) == 'ASSAY'] <- 'assay'
+    colnames(meta_df)[colnames(meta_df) == 'FW_NO'] <- 'fw_no'
+    colnames(meta_df)[colnames(meta_df) == 'RV_NO'] <- 'rv_no'
+    colnames(meta_df)[colnames(meta_df) == 'FW_TAG'] <- 'fw_index'
+    colnames(meta_df)[colnames(meta_df) == 'RV_TAG'] <- 'rv_index'
+    colnames(meta_df)[colnames(meta_df) == 'PLATE'] <- 'plate'
+    colnames(meta_df)[colnames(meta_df) == 'WELL'] <- 'well'
+  
+    for (i in 1:length(colnames(meta_df))) {
+      colnames(meta_df)[i] = tolower(colnames(meta_df)[i])
+    }
     meta_df$fastq_1 <- NA
     meta_df$fastq_2 <- NA
     writeData(

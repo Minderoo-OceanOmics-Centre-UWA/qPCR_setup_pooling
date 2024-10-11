@@ -9,6 +9,7 @@ source("R/export_plates_to_excel.R")
 suppressMessages(library(tidyverse))
 suppressMessages(library(readxl))
 suppressMessages(library(openxlsx))
+suppressMessages(library(plyr))
 
 meta_to_plates <- function(input_file,
                            output_file,
@@ -17,7 +18,8 @@ meta_to_plates <- function(input_file,
                            plate_width = 12,
                            plate_height = 8,
                            controls = c("NTC", "ITC"),
-                           control_pattern = "WC|DI|EB|BC|NTC|ITC|Cont|BL") {
+                           control_pattern = "WC|DI|EB|BC|NTC|ITC|Cont|BL",
+                           skip_samples = 0) {
 
     # Import our data
     meta_df  <- import_meta_df(input_file, run)
@@ -30,7 +32,16 @@ meta_to_plates <- function(input_file,
         meta_df <- meta_df[!grepl(control, meta_df$SAMPLEID),]
     }
 
-    # Get sample ids
+    if (skip_samples > 0) {
+      sample_ids <- c()
+      
+      for (i in 1:skip_samples) {
+        sample_ids <- c(sample_ids, paste0("FAKESAMPLE_", i)) 
+      }
+      fake_meta_df <- data.frame(SAMPLEID = sample_ids, SEQUENCINGRUN = run)
+      meta_df <- rbind.fill(fake_meta_df, meta_df)
+    } 
+    
     sample_ids <- meta_df$SAMPLEID
 
     # Make sure the plate_height is a valid number
@@ -180,6 +191,12 @@ meta_to_plates <- function(input_file,
       
       meta_df[row, "sample_type"] <- sample_type
     }
+    
+    meta_df <- meta_df %>%
+      filter(!grepl("^FAKESAMPLE_", SAMPLEID))
+    
+    position_df <- position_df %>%
+      filter(!grepl("^FAKESAMPLE_", sample_id))
 
     export_plates_to_excel(
         assays,

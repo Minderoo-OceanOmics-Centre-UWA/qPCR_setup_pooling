@@ -1,3 +1,4 @@
+
 # qPCR_setup_pooling
 
 Code for manual qPCR setup and amplicon pooling for eDNA.
@@ -51,6 +52,7 @@ plate_width     <- 12
 plate_height    <- 8
 controls        <- c("NTC", "ITC")
 control_pattern <- "WC|DI|EB|BC|NTC|ITC|Cont|BL"
+skip_samples    <- 0
 
 meta_to_plates(
     input_file,
@@ -60,7 +62,8 @@ meta_to_plates(
     plate_width,
     plate_height,
     controls,
-    control_pattern
+    control_pattern,
+    skip_samples
 )
 ```
 
@@ -74,6 +77,7 @@ meta_to_plates(
 - `plate_height`: The number of rows per plate. Default = 8. Max allowed = 13.
 - `controls`: A vector of control samples that will be added at the end of each plate. Default = c("NTC", "ITC").
 - `control_pattern`: A string that will be used to flag samples as control samples. Default = "WC|DI|EB|BC|NTC|ITC|Cont|BL". This default value means that any sample containing "WC", "DI", "EB", "BC", "NTC", "ITC", "Cont", or "BL" will be flagged as a control sample.
+- `skip_samples`: How many samples would you like to skip? Default = 0.
 
 ### meta_to_plates() input
 
@@ -86,7 +90,6 @@ The input Excel file should contain a metadata sheet and one index sheet for eac
   - `sequencing_run`: This column will be used to use only samples with the same run as the `run argument`.
 - `${assay}_index`: Replace `${assay}` with the name of your assay. Should have the columns `primer_num`, `primer_seq`, `tags`, and `fw_rv`.
   - `primer_num`: Each value here should be unique. These values will be used as column/row names for your plates.
-  - `primer_seq`: The primer sequence. This will be added to the output file.
   - `tags`: The sequence used to for demultiplexing samples.
   - `fw_rv`: Use this column to indicate if the primer is a fw or rv primer. Values can be `fw` or `rv`.
 
