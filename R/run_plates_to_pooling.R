@@ -808,6 +808,7 @@ qpcr_dir     <- "test_data/input/qPCR_test_data/"
 output_dir   <- "test_data/output/"
 plate_width  <- 12
 plate_height <- 8
+assays       <- c("16S", "MiFish")
 
 
 ##########################################################
@@ -820,24 +821,20 @@ sample_order <- function(samples) {
 
 read_qPCR_data <- function(file, assays, plate_numbers) {
   # loads in data
-  data <- read.delim(file)
+  data <- tryCatch({
+    data <- read.delim(file, sep = " ")
+    data.frame(data)
+  }, error = function(e){
+    data <- read.delim(file, sep = "\t")
+    data.frame(data)
+  })
 
   # get info from sample source, assay and plate id details from file name
-  data$fileName <- tryCatch({
-    filename <- gsub(
-      ".txt",
-      "",
-      str_split(file, "\\/\\/", simplify = TRUE)[, 2]
-    )
-    return(filename)
-  }, error = function(e){
-    filename <- gsub(
-      ".txt",
-      "",
-      str_split(file, "\\/\\/", simplify = TRUE)[, 1]
-    )
-    return(filename)
-  })
+  data$fileName <- gsub(
+    ".txt",
+    "",
+    basename(file)
+  )
   description       <- strsplit(data$fileName, "_")
   desc_count        <- length(description[[1]])
   data$assay        <- sapply(description, "[", (desc_count - 1))
@@ -932,6 +929,7 @@ export_biomek_pooling_workbook <- function(assays,
   book               <- 0
   sam_type_num       <- 0
   biomek_deck_pos    <- 1
+  assay_num          <- 0
   out_df             <- data.frame(
     assay = NULL,
     plate_number = NULL,
@@ -945,7 +943,8 @@ export_biomek_pooling_workbook <- function(assays,
 
   # Loop that will cycle through assays, plate numbers, and sample types
   for (curr_assay in assays) {
-    subs <- position_df_pool |> filter(assay == curr_assay)
+    subs      <- position_df_pool |> filter(assay == curr_assay)
+    assay_num <- assay_num + 1
     for (curr_plate in plate_numbers) {
       unique_sam_types <- unique(subs[subs$plate_number == curr_plate, ]$sample_type)
       plate_num        <- plate_num + 1
@@ -1032,6 +1031,9 @@ export_biomek_pooling_workbook <- function(assays,
           ) %>%
           data.frame() %>%
           list()
+
+        minipool_calc_vols[curr_key][[1]] <- minipool_calc_vols[curr_key][[1]] %>%
+          mutate(DestinationWell = ifelse(grepl("^ITC_", SAMPLE), paste0("C", assay_num), DestinationWell))
 
         # Set theme for plots
         theme_set(theme_bw() +
@@ -1212,6 +1214,30 @@ import_position_df <- function(excel_file) {
   return(position_df)
 }
 
+import_samplesheet_df <- function(excel_file, assay) {
+  excel_sheets   <- excel_sheets(excel_file)
+  metadata_sheet <- grep(
+    glob2rx(paste0("metadata_", assay)),
+    excel_sheets,
+    ignore.case = TRUE,
+    value = TRUE
+  )
+  
+  # Validate number of sheets called 'position_df'
+  if (length(metadata_sheet) == 0) {
+    stop(paste0("No sheets found named 'metadata_'", assay, "'"))
+  }
+  if (length(metadata_sheet) > 1) {
+    stop(paste0("Multiple sheets found named 'metadata_'", assay, "'"))
+  }
+  
+  # Import df
+  metadata_df   <- read_excel(excel_file, sheet = paste0("metadata_", assay)) %>%
+    as.data.frame()
+  
+  return(metadata_df)
+}
+
 
 ##########################################################
 # Import data
@@ -1255,7 +1281,6 @@ if (TRUE) {
   fnames         <- str_replace(fnames, "//", "/")
   position_df    <- import_position_df(input_file)
   plate_numbers  <- unique(position_df$plate_number)
-  assays         <- unique(position_df$assay)
 
   all_lc480_data <- ldply(fnames, read_qPCR_data, assays, plate_numbers)
   all_lc480_data <- change_lc480_colnames(all_lc480_data)
@@ -1561,7 +1586,7 @@ minipool_overview <-   position_df_pool %>%
 minipool_calc_vols <- export_biomek_pooling_workbook(assays, plate_numbers, position_df_pool, minipool_overview, output_dir)
 
 # Minipool summaries including final volume in pooled tube & the number of samples/controls in each tube
-minipool_vols_df <- do.call(rbind.data.frame, minipool_calc_vols)
+minipool_vols_df      <- do.call(rbind.data.frame, minipool_calc_vols)
 minipool_vols_summary <- minipool_vols_df %>%
   group_by(assay, plate_number, sample_type, DestinationWell) %>%
   dplyr::summarise(
@@ -1573,4 +1598,18 @@ minipool_vols_summary <- minipool_vols_df %>%
 write_csv(minipool_vols_summary, paste0(output_dir, "/minipool_summary.csv"))
 
 #confirm final tube volumes do not exceed 1.5 mL (or 1500 uL)
+<<<<<<< HEAD
 >>>>>>> 37cadb9242f8824ccee413b560d11ecdf76b9452
+=======
+
+# Create samplesheets with info on discarded samples
+for (assay in assays) {
+  meta_df           <- import_samplesheet_df(input_file, assay)
+  meta_df$discarded <- FALSE
+  curr_disc_sams    <- discarded_samples[discarded_samples$assay == assay, ]
+  
+  meta_df$discarded <- ifelse(meta_df$sample %in% curr_disc_sams$sample, TRUE, meta_df$discarded)
+  
+  write_csv(meta_df, paste0(output_dir, "/samplesheet_", assay, ".csv"))
+}
+>>>>>>> 2b11bf44de1036f5b93d04ca310d71857efa9787

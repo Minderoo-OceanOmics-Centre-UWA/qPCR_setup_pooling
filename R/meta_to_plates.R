@@ -16,7 +16,7 @@ meta_to_plates <- function(input_file,
                            run,
                            plate_width = 12,
                            plate_height = 8,
-                           controls = c("ITC", "NTC"),
+                           controls = c("NTC", "ITC"),
                            control_pattern = "WC|DI|EB|BC|NTC|ITC|Cont|BL") {
 
     # Import our data
@@ -24,7 +24,7 @@ meta_to_plates <- function(input_file,
     index_df <- import_index_df(input_file, assays)
 
     # Remove invisible columns in Excel
-    meta_df  <- meta_df %>% select(-contains("..."))
+    meta_df  <- meta_df %>% dplyr::select(-contains("..."))
     # Remove control samples that shouldn't be in the input metadata
     for (control in controls) {
         meta_df <- meta_df[!grepl(control, meta_df$SAMPLEID),]
@@ -163,6 +163,22 @@ meta_to_plates <- function(input_file,
                 last_rv     <- last_rv + plate_height
             }
         }
+    }
+    
+    meta_df$sample_type <- NA
+    control_vect        <- str_split_1(control_pattern, "\\|")
+    for (row in 1:nrow(meta_df)) {
+      sample      <- meta_df[row, "SAMPLEID"]
+      sample_type <- "sample"
+      
+      for (i in control_vect) {
+        if (grepl(i, sample, fixed = TRUE)) {
+          sample_type <- paste0(i, "_Control")
+          break
+        }
+      }
+      
+      meta_df[row, "sample_type"] <- sample_type
     }
 
     export_plates_to_excel(

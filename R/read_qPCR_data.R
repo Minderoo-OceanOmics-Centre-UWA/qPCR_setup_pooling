@@ -7,7 +7,7 @@ read_qPCR_data <- function(file, assays, plate_numbers) {
     data$fileName <- gsub(
         ".txt",
         "",
-        str_split(file, "\\/\\/", simplify = TRUE)[, 2]
+        basename(file)
     )
     description       <- strsplit(data$fileName, "_")
     desc_count        <- length(description[[1]])
