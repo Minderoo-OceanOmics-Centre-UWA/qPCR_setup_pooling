@@ -18,7 +18,31 @@ install.packages("ggplate")
 
 ## Script templates
 
-There is a template file in the R folder called `run_meta_to_plates.R` that can be used to run the meta_to_plates() function. The  full script to run the plates-to-pooling functionality can be found in `run_plates_to_pooling.R`.
+There is a template file in the R folder called `run_meta_to_plates.R` that can be used to run the meta_to_plates() function. The full script to run the plates-to-pooling functionality can be found in `run_plates_to_pooling.R`. The script to merge qPCR QC metrics can be found in `run_concat_qPCR_data.R`.
+
+## run_concat_qPCR_data.R
+
+### Running run_concat_qPCR_data
+
+These are the variables you may need to change in the `run_concat_qPCR_data.R` script:
+
+```{R}
+input_dir  <- "test_data/input/cp_epf_tm_files/"
+output_dir <- "test_data/output/"
+assays     <- c("16S", "MiFish")
+```
+
+### run_concat_qPCR_data variables
+
+- `input_dir`: Directory with qPCR QC data. Filenames should be in a specific format mentioned below.
+- `output_dir`: Directory where you would like the output file. The output file will contain the Cp, EPF, and Tm data in one file.
+- `assays`: A vector of assays. These should match the assay names found in the input file names.
+
+### run_concat_qPCR_data input
+
+- `input_dir`: An example of the qpcr directory can be viewed at `test_data/cp_epf_tm_files`
+  - Each file in the qPCR directory should have names that end in `_$assay_$plate_Cp.txt`, `_$assay_$plate_EPF.txt`, or `_$assay_$plate_Tm.txt`. An example name would be `20240521_SWWA_V7_16S_Plate1_SH_Cp.txt`.
+  - These txt files should be tab seperated files matching the format found in those test files.
 
 ## Running meta_to_plates()
 
