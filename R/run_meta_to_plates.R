@@ -4,9 +4,20 @@ output_file <- "test_data/output/output_df.xlsx"
 assays      <- c("16S", "MiFish")
 run         <- "run1"
 
+plates_to_skip <- list(
+  "16S" = 2,
+  "MiFish" = 0
+)
+samples_to_skip <- list(
+  "16S" = 10,
+  "MiFish" = 0
+)
+
 meta_to_plates(
   input_file,
   output_file,
   assays,
-  run
+  run,
+  skip_plates = plates_to_skip,
+  skip_samples = samples_to_skip
 )
