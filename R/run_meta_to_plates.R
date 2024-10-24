@@ -5,11 +5,11 @@ assays      <- c("16S", "MiFish")
 run         <- "run1"
 
 plates_to_skip <- list(
-  "16S" = 2,
+  "16S" = 0,
   "MiFish" = 0
 )
 samples_to_skip <- list(
-  "16S" = 10,
+  "16S" = 0,
   "MiFish" = 0
 )
 
