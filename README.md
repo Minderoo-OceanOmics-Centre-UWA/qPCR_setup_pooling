@@ -55,11 +55,22 @@ output_file <- "path/to/output.xlsx"
 assays      <- c("16S", "MiFish")
 run         <- "run_1"
 
+plates_to_skip <- list(
+  "16S" = 2,
+  "MiFish" = 0
+)
+samples_to_skip <- list(
+  "16S" = 10,
+  "MiFish" = 0
+)
+
 meta_to_plates(
     input_file,
     output_file,
     assays,
-    run
+    run,
+    skip_plates = plates_to_skip,
+    skip_samples = samples_to_skip
 )
 ```
 
@@ -76,7 +87,14 @@ plate_width     <- 12
 plate_height    <- 8
 controls        <- c("NTC", "ITC")
 control_pattern <- "WC|DI|EB|BC|NTC|ITC|Cont|BL"
-skip_samples    <- 0
+skip_plates     <- list(
+  "16S" = 0,
+  "MiFish" = 0
+)
+skip_samples    <- list(
+  "16S" = 0,
+  "MiFish" = 0
+)
 
 meta_to_plates(
     input_file,
@@ -101,7 +119,8 @@ meta_to_plates(
 - `plate_height`: The number of rows per plate. Default = 8. Max allowed = 13.
 - `controls`: A vector of control samples that will be added at the end of each plate. Default = c("NTC", "ITC").
 - `control_pattern`: A string that will be used to flag samples as control samples. Default = "WC|DI|EB|BC|NTC|ITC|Cont|BL". This default value means that any sample containing "WC", "DI", "EB", "BC", "NTC", "ITC", "Cont", or "BL" will be flagged as a control sample.
-- `skip_samples`: How many samples would you like to skip? Default = 0.
+- `skip_plates`: How many plates would you like to skip? Allows different values for each assay.
+- `skip_samples`: How many samples would you like to skip? Allows different values for each assay. Can be used with skip_plates (e.g., you can skip 2 plates and 10 samples).
 
 ### meta_to_plates() input
 
