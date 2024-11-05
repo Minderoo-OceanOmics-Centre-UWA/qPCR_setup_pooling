@@ -563,7 +563,7 @@ rep_failed$tm1_mean       <- NA
 rep_failed$tm1_outside_sd <- NA
 for (curr_assay in assays) {
   for (curr_plate in plates) {
-    tm1s       <- rep_failed[rep_failed$assay == curr_assay & rep_failed$plate_number == curr_plate, "tm1"]
+    tm1s       <- rep_failed[rep_failed$assay == curr_assay & rep_failed$plate_number == curr_plate & rep_failed$sample_type == "sample", "tm1"]
     tm1_sd     <- sd(na.omit(tm1s))
     tm1_mean   <- mean(na.omit(tm1s))
     tm1_min    <- tm1_mean - tm1_sd
