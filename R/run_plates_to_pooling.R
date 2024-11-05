@@ -670,6 +670,24 @@ for (row in 1:nrow(checked_runs)) {
   rep_failed$discard[rep_failed$assay_plate_number_pos == id] <- disc
 }
 
+# summary of number of reps to be discarded per sample 
+rep_failed_summary <- rep_failed %>%   
+  filter(replicate != "pool") %>%   
+  dplyr::group_by(sample, assay) %>%   
+  dplyr::summarise(count_discard = sum(discard == "DISCARD")) %>%   
+  ungroup() %>%   
+  arrange(sample_order(sample)) 
+# identify the total number of samples per assay 
+# with replicates to be discarded print_failed_rep_message(rep_failed_summary, assays) 
+# print the failed reps (reps where the epf < 2 and the Cp >40) 
+discard_df <- print(rep_failed[rep_failed$discard == "DISCARD", ]) 
+# print the reps with epf between 2 to 5   
+print(rep_failed[rep_failed$epf_2_to_5 == TRUE, ]) 
+# print reps with tm1 outside of standard deviation 
+print(rep_failed[rep_failed$tm1_outside_sd == TRUE, ]) 
+# Print all the bad reps 
+print(rep_failed[(rep_failed$tm1_outside_sd == TRUE | rep_failed$epf_2_to_5 == TRUE | rep_failed$discard == "DISCARD") & rep_failed$sample_type == "sample", ]) 
+
 
 ##########################################################
 # Output reps_to_discard.csv
