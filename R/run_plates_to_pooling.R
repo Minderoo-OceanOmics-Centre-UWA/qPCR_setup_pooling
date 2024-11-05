@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 ##########################################################
 # Packages
 ##########################################################
@@ -1618,9 +1617,7 @@ minipool_vols_summary <- minipool_vols_df %>%
 write_csv(minipool_vols_summary, paste0(output_dir, "/minipool_summary.csv"))
 
 #confirm final tube volumes do not exceed 1.5 mL (or 1500 uL)
-<<<<<<< HEAD
->>>>>>> 37cadb9242f8824ccee413b560d11ecdf76b9452
-=======
+
 
 # Create samplesheets with info on discarded samples
 for (assay in assays) {
@@ -1632,4 +1629,3 @@ for (assay in assays) {
   
   write_csv(meta_df, paste0(output_dir, "/samplesheet_", assay, ".csv"))
 }
->>>>>>> 2b11bf44de1036f5b93d04ca310d71857efa9787
