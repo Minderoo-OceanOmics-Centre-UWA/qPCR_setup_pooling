@@ -18,7 +18,31 @@ install.packages("ggplate")
 
 ## Script templates
 
-There is a template file in the R folder called `run_meta_to_plates.R` that can be used to run the meta_to_plates() function. The  full script to run the plates-to-pooling functionality can be found in `run_plates_to_pooling.R`.
+There is a template file in the R folder called `run_meta_to_plates.R` that can be used to run the meta_to_plates() function. The full script to run the plates-to-pooling functionality can be found in `run_plates_to_pooling.R`. The script to merge qPCR QC metrics can be found in `run_concat_qPCR_data.R`.
+
+## run_concat_qPCR_data.R
+
+### Running run_concat_qPCR_data
+
+These are the variables you may need to change in the `run_concat_qPCR_data.R` script:
+
+```{R}
+input_dir  <- "test_data/input/cp_epf_tm_files/"
+output_dir <- "test_data/output/"
+assays     <- c("16S", "MiFish")
+```
+
+### run_concat_qPCR_data variables
+
+- `input_dir`: Directory with qPCR QC data. Filenames should be in a specific format mentioned below.
+- `output_dir`: Directory where you would like the output file. The output file will contain the Cp, EPF, and Tm data in one file.
+- `assays`: A vector of assays. These should match the assay names found in the input file names.
+
+### run_concat_qPCR_data input
+
+- `input_dir`: An example of the qpcr directory can be viewed at `test_data/cp_epf_tm_files`
+  - Each file in the qPCR directory should have names that end in `_$assay_$plate_Cp.txt`, `_$assay_$plate_EPF.txt`, or `_$assay_$plate_Tm.txt`. An example name would be `20240521_SWWA_V7_16S_Plate1_SH_Cp.txt`.
+  - These txt files should be tab seperated files matching the format found in those test files.
 
 ## Running meta_to_plates()
 
@@ -31,11 +55,22 @@ output_file <- "path/to/output.xlsx"
 assays      <- c("16S", "MiFish")
 run         <- "run_1"
 
+plates_to_skip <- list(
+  "16S" = 2,
+  "MiFish" = 0
+)
+samples_to_skip <- list(
+  "16S" = 10,
+  "MiFish" = 0
+)
+
 meta_to_plates(
     input_file,
     output_file,
     assays,
-    run
+    run,
+    skip_plates = plates_to_skip,
+    skip_samples = samples_to_skip
 )
 ```
 
@@ -52,7 +87,14 @@ plate_width     <- 12
 plate_height    <- 8
 controls        <- c("NTC", "ITC")
 control_pattern <- "WC|DI|EB|BC|NTC|ITC|Cont|BL"
-skip_samples    <- 0
+skip_plates     <- list(
+  "16S" = 0,
+  "MiFish" = 0
+)
+skip_samples    <- list(
+  "16S" = 0,
+  "MiFish" = 0
+)
 
 meta_to_plates(
     input_file,
@@ -77,7 +119,8 @@ meta_to_plates(
 - `plate_height`: The number of rows per plate. Default = 8. Max allowed = 13.
 - `controls`: A vector of control samples that will be added at the end of each plate. Default = c("NTC", "ITC").
 - `control_pattern`: A string that will be used to flag samples as control samples. Default = "WC|DI|EB|BC|NTC|ITC|Cont|BL". This default value means that any sample containing "WC", "DI", "EB", "BC", "NTC", "ITC", "Cont", or "BL" will be flagged as a control sample.
-- `skip_samples`: How many samples would you like to skip? Default = 0.
+- `skip_plates`: How many plates would you like to skip? Allows different values for each assay.
+- `skip_samples`: How many samples would you like to skip? Allows different values for each assay. Can be used with skip_plates (e.g., you can skip 2 plates and 10 samples).
 
 ### meta_to_plates() input
 

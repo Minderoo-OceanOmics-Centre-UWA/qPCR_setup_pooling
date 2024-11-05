@@ -14,7 +14,7 @@ get_plate_dfs <- function(first_fw,
                           plate_width,
                           meta_df) {
 
-    sample_ids <- unique(meta_df$SAMPLEID)
+    sample_ids <- meta_df$SAMPLEID[meta_df$ASSAY == assay]
     sample_count <- length(sample_ids)
 
     # Get vectors of the primers

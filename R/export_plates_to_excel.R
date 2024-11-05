@@ -4,7 +4,8 @@ export_plates_to_excel <- function(assays,
                                    meta_df,
                                    position_df,
                                    output_file,
-                                   plate_height) {
+                                   plate_height,
+                                   plate_count) {
     # Create a workbook object
     wb <- createWorkbook()
 
@@ -21,81 +22,84 @@ export_plates_to_excel <- function(assays,
     # the Excel sheet
     row_start        <- 1
     big_row_start    <- 1
-    plate_count      <- length(plates) / length(assays)
+    #plate_count      <- length(plates) / length(assays)
 
     for (assay in assays) {
-        for (plate_num in 1:plate_count) {
+        curr_plate_count <- plate_count[assay][[1]]
+        for (plate_num in 1:curr_plate_count) {
             key <- paste0(assay, plate_num)
-            plates[key][[1]] <- rownames_to_column(
-                plates[key][[1]], var = paste0(assay, " plate ", plate_num)
-            )
+            if (!all(is.na(plates[key][[1]]))) {
+                plates[key][[1]] <- rownames_to_column(
+                    plates[key][[1]], var = paste0(assay, " plate ", plate_num)
+                )
 
-            big_plates[key][[1]] <- rownames_to_column(
-                big_plates[key][[1]],
-                var = paste0(assay, " plate ", plate_num)
-            )
+                big_plates[key][[1]] <- rownames_to_column(
+                    big_plates[key][[1]],
+                    var = paste0(assay, " plate ", plate_num)
+                )
 
-            big_plates[key][[1]][, 1] <- gsub(
-                "_[12]$",
-                "",
-                big_plates[key][[1]][, 1]
-            )
+                big_plates[key][[1]][, 1] <- gsub(
+                    "_[12]$",
+                    "",
+                    big_plates[key][[1]][, 1]
+                )
 
-            colnames(big_plates[key][[1]])[-1] <- gsub(
-                "_[12]$",
-                "",
-                colnames(big_plates[key][[1]])[-1]
-            )
+                colnames(big_plates[key][[1]])[-1] <- gsub(
+                    "_[12]$",
+                    "",
+                    colnames(big_plates[key][[1]])[-1]
+                )
 
-            plates[key][[1]] <- rbind(
-                colnames(plates[key][[1]]),
-                plates[key][[1]]
-            )
+                plates[key][[1]] <- rbind(
+                    colnames(plates[key][[1]]),
+                    plates[key][[1]]
+                )
 
-            colnames(plates[key][[1]]) <- ""
+                colnames(plates[key][[1]]) <- ""
 
-            big_plates[key][[1]] <- rbind(
-                colnames(big_plates[key][[1]]),
-                big_plates[key][[1]]
-            )
+                big_plates[key][[1]] <- rbind(
+                    colnames(big_plates[key][[1]]),
+                    big_plates[key][[1]]
+                )
 
-            colnames(big_plates[key][[1]]) <- ""
+                colnames(big_plates[key][[1]]) <- ""
 
-            plates[key][[1]] <- replace(
-                plates[key][[1]],
-                is.na(plates[key][[1]]) | plates[key][[1]] == "NA",
-                ""
-            )
+                plates[key][[1]] <- replace(
+                    plates[key][[1]],
+                    is.na(plates[key][[1]]) | plates[key][[1]] == "NA",
+                    ""
+                )
 
-            big_plates[key][[1]] <- replace(
-                big_plates[key][[1]],
-                is.na(big_plates[key][[1]]) | big_plates[key][[1]] == "NA",
-                ""
-            )
+                big_plates[key][[1]] <- replace(
+                    big_plates[key][[1]],
+                    is.na(big_plates[key][[1]]) | big_plates[key][[1]] == "NA",
+                    ""
+                )
 
-            # Write the data to the sheet
-            writeData(
-                wb,
-                sheet = "plates",
-                x = plates[key][[1]],
-                startRow = row_start,
-                startCol = 1,
-                colNames = FALSE,
-                rowNames = FALSE
-            )
+                # Write the data to the sheet
+                writeData(
+                    wb,
+                    sheet = "plates",
+                    x = plates[key][[1]],
+                    startRow = row_start,
+                    startCol = 1,
+                    colNames = FALSE,
+                    rowNames = FALSE
+                )
 
-            writeData(
-                wb,
-                sheet = "big_plates",
-                x = big_plates[key][[1]],
-                startRow = big_row_start,
-                startCol = 1,
-                colNames = FALSE,
-                rowNames = FALSE
-            )
+                writeData(
+                    wb,
+                    sheet = "big_plates",
+                    x = big_plates[key][[1]],
+                    startRow = big_row_start,
+                    startCol = 1,
+                    colNames = FALSE,
+                    rowNames = FALSE
+                )
 
-            row_start     <- row_start + plate_height + 2
-            big_row_start <- big_row_start + (plate_height * 2) + 2
+                row_start     <- row_start + plate_height + 2
+                big_row_start <- big_row_start + (plate_height * 2) + 2
+            }
         }
     }
 

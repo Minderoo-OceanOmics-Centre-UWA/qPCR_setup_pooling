@@ -5,9 +5,6 @@ create_position_df <- function(meta_df,
                                plate_width,
                                control_pattern) {
 
-    sample_ids   <- unique(meta_df$SAMPLEID)
-    sample_count <- length(sample_ids)
-
     # Create a position_df to hold information that can link
     # the samples to the big plate positions
     position_df                           <- meta_df[, c("SAMPLEID", "ASSAY")]
@@ -44,8 +41,11 @@ create_position_df <- function(meta_df,
 
     for (assay in assays) {
         # Track sample. Starts again for each assay.
+      
+        sample_names <- unique(meta_df$SAMPLEID[meta_df$ASSAY == assay])
+        sample_count <- length(sample_names)
         sample_i <- 1
-        for (plate_num in (1:plate_count)) {
+        for (plate_num in (1:plate_count[assay][[1]])) {
             # Track the well and replicate. Start again for each plate.
             well_row_index <- 1
             well_col       <- 1
@@ -59,7 +59,7 @@ create_position_df <- function(meta_df,
                 if (sample_i > sample_count) {
                     break
                 }
-                curr_sample <- sample_ids[sample_i]
+                curr_sample <- sample_names[sample_i]
 
                 # Flag samples as controls when they match the pattern
                 if (grepl(control_pattern, c(curr_sample))) {
