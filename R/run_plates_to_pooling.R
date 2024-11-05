@@ -681,7 +681,9 @@ write_csv(reps_to_discard, paste0(output_dir, "/reps_to_discard.csv"))
 
 clean_lc480_data <- rep_failed %>%
   dplyr::group_by(assay, sample) %>%
-  filter(sum(discard == "KEEP") >= 2)
+  filter(discard=="KEEP")
+
+#filter(sum(discard == "KEEP") >= 2)
 
 
 ##### visualise clean EPF data in a heatmap ####
