@@ -68,7 +68,8 @@ read_qPCR_data <- function(file, assays, plate_numbers) {
     )
   }
 
-  if (! curr_plate %in% plate_numbers) {
+  
+  if (! curr_plate %in% plate_numbers[curr_assay][[1]]) {
     stop(
       paste0(
         "Error: plate - ",
@@ -76,11 +77,12 @@ read_qPCR_data <- function(file, assays, plate_numbers) {
         " taken from file ",
         file,
         " not found in ",
-        plate_numbers,
+        plate_numbers[curr_assay],
         " Make sure filename ends in _$assay_$plate.txt"
       )
     )
   }
+
 
   return(data)
 }
@@ -93,8 +95,8 @@ export_plate_pdfs <- function(df,
                               plate_width,
                               plate_height) {
 
-  for (curr_plate in plate_numbers) {
-    for (curr_assay in assays) {
+  for (curr_assay in assays) {
+    for (curr_plate in plate_numbers[curr_assay][[1]]) {
       pdf(
         paste0(
           output_dir,
@@ -157,7 +159,7 @@ export_biomek_pooling_workbook <- function(assays,
   for (curr_assay in assays) {
     subs      <- position_df_pool |> filter(assay == curr_assay)
     assay_num <- assay_num + 1
-    for (curr_plate in plate_numbers) {
+    for (curr_plate in plate_numbers[curr_assay][[1]]) {
       unique_sam_types <- unique(subs$sample_type)
       plate_num        <- plate_num + 1
       keys             <- c()
@@ -507,7 +509,11 @@ if (TRUE) {
 
   fnames         <- str_replace(fnames, "//", "/")
   position_df    <- import_position_df(input_file)
-  plate_numbers  <- unique(position_df$plate_number)
+  
+  plate_numbers <- list()
+  for (assay in assays) {
+    plate_numbers[assay] = list(unique(position_df[position_df$assay == assay, "plate_number"]))
+  }
 
   all_lc480_data <- ldply(fnames, read_qPCR_data, assays, plate_numbers)
   all_lc480_data <- change_lc480_colnames(all_lc480_data)
@@ -515,16 +521,18 @@ if (TRUE) {
   all_lc480_data$sample <- trimws(all_lc480_data$sample)
 
   # Make sure qPCR data isn't missing any plates
-  missing_plates <- c()
-  for (plate in plate_numbers) {
-    if (! plate %in% unique(all_lc480_data$plate_number)) {
-      missing_plates <- c(missing_plates, plate)
+  for (assay in assays) {
+    missing_plates <- c()
+    for (plate in plate_numbers[assay][[1]]) {
+      if (! plate %in% unique(all_lc480_data[all_lc480_data$assay == assay, "plate_number"])) {
+        missing_plates <- c(missing_plates, plate)
+      }
     }
-  }
-  if (length(missing_plates) > 0) {
-    print("qPCR data directory is missing plates: ")
-    print(missing_plates)
-    stop()
+    if (length(missing_plates) > 0) {
+      print("qPCR data directory is missing plates: ")
+      print(missing_plates)
+      stop()
+    }
   }
 
   lc480_data_sample <- all_lc480_data %>%
@@ -555,7 +563,7 @@ export_plate_pdfs(
 
 # The plots are outputed into the output_dir specified as .pdf but let's look at one of those plots in R studio. 
 plate_plot_epf <- lc480_data_sample %>%
-  filter(plate_number == "Plate1" & assay == "16S") %>%
+  filter(plate_number == "Plate2" & assay == "16S") %>%
   plate_plot(
     position = pos,
     value = epf,
@@ -594,11 +602,11 @@ rep_failed <- rep_failed %>%
   arrange(sample_order(sample))
 
 # Flag samples with tm1 outside of standard deviation
-plates                    <- unique(rep_failed$plate_number)
 rep_failed$tm1_sd         <- NA
 rep_failed$tm1_mean       <- NA
 rep_failed$tm1_outside_sd <- NA
 for (curr_assay in assays) {
+  plates <- unique(rep_failed[rep_failed$assay == curr_assay, "plate_number"])
   for (curr_plate in plates) {
     tm1s       <- rep_failed[rep_failed$assay == curr_assay & rep_failed$plate_number == curr_plate & rep_failed$sample_type == "sample", "tm1"]
     tm1_sd     <- sd(na.omit(tm1s))
@@ -807,10 +815,9 @@ position_df_pool <- position_df %>%
       assay, ".", sample_replicate
     )
   ) %>%
-  left_join(epf_cal_mean, by = "assay_sample_replicate")
-
+  left_join(epf_cal_mean, by = "assay_sample_replicate") #%>%
+  #na.omit(position_df_pool$mean)
 position_df_pool <- position_df_pool[(position_df_pool$sample_type == "control" | !is.na(position_df_pool$mean)), ]
-
 
 ##########################################################
 # Minipool Generation Calcs & Run output function
@@ -856,3 +863,4 @@ for (assay in assays) {
   
   write_csv(meta_df, paste0(output_dir, "/samplesheet_", assay, ".csv"))
 }
+
