@@ -807,8 +807,9 @@ position_df_pool <- position_df %>%
       assay, ".", sample_replicate
     )
   ) %>%
-  left_join(epf_cal_mean, by = "assay_sample_replicate") %>%
-  na.omit(position_df_pool$mean)
+  left_join(epf_cal_mean, by = "assay_sample_replicate")
+
+position_df_pool <- position_df_pool[(position_df_pool$sample_type == "control" | !is.na(position_df_pool$mean)), ]
 
 
 ##########################################################
