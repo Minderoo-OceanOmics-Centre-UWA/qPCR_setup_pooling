@@ -158,7 +158,7 @@ export_biomek_pooling_workbook <- function(assays,
     subs      <- position_df_pool |> filter(assay == curr_assay)
     assay_num <- assay_num + 1
     for (curr_plate in plate_numbers) {
-      unique_sam_types <- unique(subs[subs$plate_number == curr_plate, ]$sample_type)
+      unique_sam_types <- unique(subs$sample_type)
       plate_num        <- plate_num + 1
       keys             <- c()
 
@@ -199,7 +199,7 @@ export_biomek_pooling_workbook <- function(assays,
         ) %>%
           data.frame() %>%
           list()
-      #  p_num <- substr(curr_plate, 6, nchar(curr_plate))
+        #  p_num <- substr(curr_plate, 6, nchar(curr_plate))
 
 
         sam_type_num <- sam_type_num + 1
@@ -230,19 +230,34 @@ export_biomek_pooling_workbook <- function(assays,
           dwell <- paste0("B", biomek_deck_pos)
         }
 
-        minipool_calc_vols[curr_key] <-
+        # This try catch exists for when a plate is missing a sampletype
+        minipool_calc_vols[curr_key] <- tryCatch({
           minipool_calcs[curr_key][[1]] %>%
-          left_join(
-            .,
-            volume_ranges[curr_key][[1]],
-            by = "miniPool_id"
-          ) %>%
-          mutate(
-            DestinationPosition = "PoolTubes",
-            DestinationWell = dwell
-          ) %>%
-          data.frame() %>%
-          list()
+            left_join(
+              .,
+              volume_ranges[curr_key][[1]],
+              by = "miniPool_id"
+            ) %>%
+            mutate(
+              DestinationPosition = "PoolTubes",
+              DestinationWell = dwell
+            ) %>%
+            data.frame() %>%
+            list()
+        }, error = function(e){
+          minipool_calcs[curr_key][[1]] %>%
+            left_join(
+              .,
+              volume_ranges[curr_key][[1]],
+              by = "miniPool_id"
+            ) %>%
+            mutate(
+              DestinationPosition = NULL,
+              DestinationWell = NULL
+            ) %>%
+            data.frame() %>%
+            list()
+        })
 
         minipool_calc_vols[curr_key][[1]] <- minipool_calc_vols[curr_key][[1]] %>%
           mutate(DestinationWell = ifelse(grepl("^ITC_", SAMPLE), paste0("C", assay_num), DestinationWell))
