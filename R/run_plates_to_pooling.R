@@ -9,6 +9,7 @@ suppressMessages(library("dplyr"))
 suppressMessages(library("plyr"))
 suppressMessages(library("gtools"))
 suppressMessages(library("ggplate"))
+suppressMessages(library("tools"))
 
 
 ##########################################################
@@ -32,18 +33,25 @@ sample_order <- function(samples) {
 }
 
 read_qPCR_data <- function(file, assays, plate_numbers) {
-  # loads in data
-  data <- tryCatch({
-    data <- read.delim(file, sep = " ")
-    data.frame(data)
-  }, error = function(e){
-    data <- read.delim(file, sep = "\t")
-    data.frame(data)
-  })
+  extension <- paste0(".", file_ext(basename(file)))
+  
+  if (extension == ".csv") {
+    data <- read.delim(file, sep = ",")
+    data <- data.frame(data)
+  } else {
+    # loads in data
+    data <- tryCatch({
+      data <- read.delim(file, sep = " ")
+      data.frame(data)
+    }, error = function(e){
+      data <- read.delim(file, sep = "\t")
+      data.frame(data)
+    }) 
+  }
 
   # get info from sample source, assay and plate id details from file name
   data$fileName <- gsub(
-    ".txt",
+    extension,
     "",
     basename(file)
   )
@@ -372,9 +380,12 @@ change_lc480_colnames <- function(lc480) {
   colnames(lc480) <- toupper(colnames(lc480))
   colnames(lc480)[which(names(lc480) == "EXPERIMENT_NAME")] <- "experiment_name"
   colnames(lc480)[which(names(lc480) == "POSITION")] <- "position"
+  colnames(lc480)[which(names(lc480) == "WELL_POSITION")] <- "position"
   colnames(lc480)[which(names(lc480) == "SAMPLE")] <- "sample"
   colnames(lc480)[which(names(lc480) == "EPF")] <- "epf"
+  colnames(lc480)[which(names(lc480) == "DRN")] <- "epf"
   colnames(lc480)[which(names(lc480) == "CP")] <- "cp"
+  colnames(lc480)[which(names(lc480) == "CQ")] <- "cp"
   colnames(lc480)[which(names(lc480) == "TM1")] <- "tm1"
   colnames(lc480)[which(names(lc480) == "TM2")] <- "tm2"
   colnames(lc480)[which(names(lc480) == "FILENAME")] <- "filename"
@@ -504,7 +515,7 @@ if (TRUE) {
   fnames <- list.files(
     paste0(qpcr_dir, "/"),
     full.names = TRUE,
-    pattern = ".txt"
+    pattern = ".txt|.csv|.tsv"
   )
 
   fnames         <- str_replace(fnames, "//", "/")
@@ -517,9 +528,16 @@ if (TRUE) {
 
   all_lc480_data <- ldply(fnames, read_qPCR_data, assays, plate_numbers)
   all_lc480_data <- change_lc480_colnames(all_lc480_data)
-  all_lc480_data$sample <- str_replace(all_lc480_data$sample, "Sample", "")
-  all_lc480_data$sample <- trimws(all_lc480_data$sample)
-
+  
+  all_lc480_data$sample <- tryCatch({
+    all_lc480_data$sample <- str_replace(all_lc480_data$sample, "Sample", "")
+    all_lc480_data$sample <- trimws(all_lc480_data$sample)
+    all_lc480_data$sample
+  }, error = function(e) {
+    all_lc480_data$sample <- seq_len(nrow(all_lc480_data))
+    all_lc480_data$sample
+  })
+  
   # Make sure qPCR data isn't missing any plates
   for (assay in assays) {
     missing_plates <- c()
@@ -835,8 +853,9 @@ minipool_overview <-   position_df_pool %>%
     diff_mean = max(mean) - min(mean),
     n_groups = 6
   )
-
-minipool_calc_vols <- export_biomek_pooling_workbook(assays, plate_numbers, position_df_pool, minipool_overview, output_dir)
+position_df_pool_filt <- position_df_pool[!is.na(position_df_pool$mean),]
+minipool_overview_filt <- minipool_overview[!is.na(minipool_overview$diff_mean),] 
+minipool_calc_vols <- export_biomek_pooling_workbook(assays, plate_numbers, position_df_pool_filt, minipool_overview_filt, output_dir)
 
 # Minipool summaries including final volume in pooled tube & the number of samples/controls in each tube
 minipool_vols_df      <- do.call(rbind.data.frame, minipool_calc_vols)
@@ -863,4 +882,3 @@ for (assay in assays) {
   
   write_csv(meta_df, paste0(output_dir, "/samplesheet_", assay, ".csv"))
 }
-
