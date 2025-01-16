@@ -231,12 +231,12 @@ meta_to_plates <- function(input_file,
 
     for (assay in assays) {
       last_plate <- plate_count[assay]
-      biomek_out_csv <- data.frame(row.names=row.names(position_df[position_df$assay == assay & position_df$plate_number == paste0("Plate", last_plate),]))
+      biomek_out_csv <- data.frame(row.names=row.names(position_df[position_df$assay == assay & position_df$plate_number == paste0("Plate", last_plate) & position_df$replicate != "pool",]))
       biomek_out_csv$SourcePosition <- "Reservor"
       biomek_out_csv$Quarter <- 1
       biomek_out_csv$Volume <- 12.8
       biomek_out_csv$DestinationPosition <- "qPCRplate"
-      biomek_out_csv$Dest_1 <- position_df[position_df$assay == assay & position_df$plate_number == paste0("Plate", last_plate),]$Pos
+      biomek_out_csv$Dest_1 <- position_df[position_df$assay == assay & position_df$plate_number == paste0("Plate", last_plate) & position_df$replicate != "pool",]$Pos
       biomek_out_csv$ID <- ""
       
       write.csv(biomek_out_csv, paste0(assay, "_biomek_MM_Plating.csv"), row.names = FALSE)
