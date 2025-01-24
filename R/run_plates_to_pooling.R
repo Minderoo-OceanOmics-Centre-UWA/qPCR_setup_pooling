@@ -711,6 +711,8 @@ for (row in 1:nrow(checked_runs)) {
   rep_failed$discard[rep_failed$assay_plate_number_pos == id] <- disc
 }
 
+write.csv(row.names = FALSE, rep_failed, paste0(output_dir, "rxns_checked.csv"))
+
 # summary of number of reps to be discarded per sample 
 rep_failed_summary <- rep_failed %>%   
   filter(replicate != "pool") %>%   
