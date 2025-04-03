@@ -662,12 +662,12 @@ rep_failed_summary <- rep_failed %>%
 # with replicates to be discarded
 print_failed_rep_message(rep_failed_summary, assays)
 
-rep_failed_summary %>%
-      filter(assay == curr_assay, count_discard >= 2)
-
-write.csv(rep_failed_summary %>%
+# Create csv file with failed samples
+write.csv(
+  rep_failed_summary %>%
       filter(assay == curr_assay, count_discard >= 2), 
-      paste0(curr_assay, "_failed_samples.csv"))
+  paste0(curr_assay, "_failed_samples.csv")
+)
 
 # print the failed reps (reps where the epf < 2 and the Cp >40)
 discard_df <- print(rep_failed[rep_failed$discard == "DISCARD", ])
