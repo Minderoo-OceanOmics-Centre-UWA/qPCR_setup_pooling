@@ -125,13 +125,14 @@ meta_to_plates(
 ### meta_to_plates() input
 
 An example input file can be viewed at `test_data/AB_V12_V9_metadata.xlsx`
+There is also a template you can follow at `test_data/R_input_Template.xlsx`
 
 The input Excel file should contain a metadata sheet and one index sheet for each assay.
 
 - `metadata`: Should have the columns `sample_id` and `sequencing_run`.
   - `sample_id`: This column will be used to name your samples and to flag samples as control samples.
   - `sequencing_run`: This column will be used to use only samples with the same run as the `run argument`.
-- `${assay}_index`: Replace `${assay}` with the name of your assay. Should have the columns `primer_num`, `primer_seq`, `tags`, and `fw_rv`.
+- `${assay}_index`: Replace `${assay}` with the name of your assay. Should have the columns `primer_num`, `tags`, and `fw_rv`.
   - `primer_num`: Each value here should be unique. These values will be used as column/row names for your plates.
   - `tags`: The sequence used to for demultiplexing samples.
   - `fw_rv`: Use this column to indicate if the primer is a fw or rv primer. Values can be `fw` or `rv`.
