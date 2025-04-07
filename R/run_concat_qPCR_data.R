@@ -10,9 +10,10 @@ library(stringr)
 # Variables
 ##########################################################
 
-input_dir  <- "test_data/input/cp_epf_tm_files/"
-output_dir <- "test_data/output/"
-assays     <- c("16S", "MiFish")
+input_dir   <- "test_data/input/cp_epf_tm_files/"
+output_dir  <- "test_data/output/"
+assays      <- c("16S", "MiFish")
+start_plate <- 1
 
 
 ##########################################################
@@ -23,7 +24,7 @@ for (assay in assays) {
   cp_files    <- Sys.glob(paste0(input_dir, "*", assay, "*Cp.txt"))
   plate_count <- length(cp_files)
   
-  for (plate_num in 1:plate_count) {
+  for (plate_num in start_plate:(start_plate + plate_count - 1)) {
     curr_plate <- paste0("Plate", plate_num)
     print(paste0(assay, ": ", curr_plate))
     
