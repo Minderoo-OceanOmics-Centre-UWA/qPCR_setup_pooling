@@ -35,12 +35,18 @@ for (assay in assays) {
     # Import cp and keep only Position, and Cp
     print(paste0("Importing: ", cp_file))
     cp          <- read_delim(cp_file, delim = "\t", skip = 1)
+    if (dim(cp)[1] == 0) {
+      stop(paste0("cp data appears to be empty. Check that this path is correct and the file isn't empty ", cp_file))
+    }
     cp$Position <- cp$Pos
     cp          <- cp[, c("Position", "Cp")]
     
     # Import epf, remove weird columns, transpose, keep final EPF plus Position and Sample
     print(paste0("Importing: ", epf_file))
     epf                          <- read_delim(epf_file, delim = "\t")
+    if (dim(epf)[1] == 0) {
+      stop(paste0("epf data appears to be empty. Check that this path is correct and the file isn't empty ", epf_file))
+    }
     epf                          <- epf[, -grep("^X...", colnames(epf))]
     epf                          <- t(epf)
     epf                          <- data.frame(epf[, ncol(epf)])
@@ -67,6 +73,9 @@ for (assay in assays) {
     # Import tm and keep only Position, Tm1, and Tm2
     print(paste0("Importing: ", tm_file))
     tm          <- read_delim(tm_file, delim = "\t", skip = 1)
+    if (dim(tm)[1] == 0) {
+      stop(paste0("tm data appears to be empty. Check that this path is correct and the file isn't empty ", tm_file))
+    }
     tm$Position <- tm$Pos
     tm          <- tm[, c("Position", "Tm1", "Tm2")]
     
