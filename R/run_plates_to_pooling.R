@@ -745,24 +745,30 @@ print(rep_failed[(rep_failed$tm1_outside_sd == TRUE | rep_failed$epf_2_to_5 == T
 
 #identify samples to be completely removed from pool (DISCARD >= 2)
 discarded_samples <- rep_failed_summary %>%
-  filter(count_discard >= 2) %>%
-  arrange(sample)
+    filter(count_discard >= 2) %>%
+    arrange(sample)
 
 # export table for manual removal of failed replicates from 384-well plates
 ## AB - can this please only include samples where 1 replicate needs to be discarded.
 # In cases where >1 rep is discarded
-reps_to_discard <- rep_failed %>%
-  dplyr::select(assay, plate_number, pos, sample_replicate, discard) %>%
-  filter(discard == "DISCARD") %>%
-  arrange(plate_number, sample_order(pos))
+reps_to_discard_count <- nrow(rep_failed %>%
+    dplyr::select(assay, plate_number, pos, sample_replicate, discard) %>%
+    filter(discard == "DISCARD"))
 
-reps_to_discard$sample <- substr(reps_to_discard$sample_replicate, 1, nchar(reps_to_discard$sample_replicate)-2)
+if (reps_to_discard_count != 0) {
+    reps_to_discard <- rep_failed %>%
+        dplyr::select(assay, plate_number, pos, sample_replicate, discard) %>%
+        filter(discard == "DISCARD") %>%
+        arrange(plate_number, sample_order(pos))
 
-# Keep only rows where the sample is not duplicated
-duplicated_rows <- duplicated(reps_to_discard[c("assay", "sample")]) | duplicated(reps_to_discard[c("assay", "sample")], fromLast = TRUE)
-reps_to_discard <- subset(reps_to_discard, !duplicated_rows)
+    reps_to_discard$sample <- substr(reps_to_discard$sample_replicate, 1, nchar(reps_to_discard$sample_replicate)-2)
 
-write_csv(reps_to_discard, paste0(output_dir, "/reps_to_discard.csv"))
+    # Keep only rows where the sample is not duplicated
+    duplicated_rows <- duplicated(reps_to_discard[c("assay", "sample")]) | duplicated(reps_to_discard[c("assay", "sample")], fromLast = TRUE)
+    reps_to_discard <- subset(reps_to_discard, !duplicated_rows)
+
+    write_csv(reps_to_discard, paste0(output_dir, "/reps_to_discard.csv"))
+}
 
 
 ##########################################################
