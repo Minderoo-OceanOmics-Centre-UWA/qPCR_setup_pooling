@@ -751,24 +751,24 @@ discarded_samples <- rep_failed_summary %>%
 # export table for manual removal of failed replicates from 384-well plates
 ## AB - can this please only include samples where 1 replicate needs to be discarded.
 # In cases where >1 rep is discarded
-reps_to_discard_count <- nrow(rep_failed %>%
+reps_to_discard <- rep_failed %>%
     dplyr::select(assay, plate_number, pos, sample_replicate, discard) %>%
-    filter(discard == "DISCARD"))
+    filter(discard == "DISCARD")
 
-if (reps_to_discard_count != 0) {
-    reps_to_discard <- rep_failed %>%
-        dplyr::select(assay, plate_number, pos, sample_replicate, discard) %>%
-        filter(discard == "DISCARD") %>%
+if (nrow(reps_to_discard) != 0) {
+    reps_to_discard <- reps_to_discard %>%
         arrange(plate_number, sample_order(pos))
-
+        
     reps_to_discard$sample <- substr(reps_to_discard$sample_replicate, 1, nchar(reps_to_discard$sample_replicate)-2)
-
+    
     # Keep only rows where the sample is not duplicated
     duplicated_rows <- duplicated(reps_to_discard[c("assay", "sample")]) | duplicated(reps_to_discard[c("assay", "sample")], fromLast = TRUE)
     reps_to_discard <- subset(reps_to_discard, !duplicated_rows)
-
-    write_csv(reps_to_discard, paste0(output_dir, "/reps_to_discard.csv"))
+} else {
+    reps_to_discard <- cbind(reps_to_discard, sample)
 }
+
+write.csv(reps_to_discard, file = paste0(output_dir, "/reps_to_discard.csv"), row.names=FALSE, quote=FALSE)
 
 
 ##########################################################
