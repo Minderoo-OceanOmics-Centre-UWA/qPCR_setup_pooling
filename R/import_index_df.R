@@ -12,7 +12,7 @@ import_index_df <- function(excel_file, assays) {
         # Get sheet names that match the correct pattern
         curr_index_sheet <- grep(
             glob2rx(
-                paste0("*", assay, "*index*|*index*", assay, "*")
+                paste0("*", assay, "_index*|*index_", assay, "*")
             ),
             excel_sheets,
             ignore.case = TRUE,
@@ -23,16 +23,16 @@ import_index_df <- function(excel_file, assays) {
         if (length(curr_index_sheet) == 0) {
             stop(
                 paste0(
-                    "No sheets found containing words 'index' and ",
-                    assay
+                    "No sheets found matching pattern: ",
+                    "*", assay, "_index*|*index_", assay, "*"
                 )
             )
         }
         if (length(curr_index_sheet) > 1) {
             stop(
                 paste0(
-                    "Multiple sheets found containing words 'index' and ",
-                    assay
+                    "Multiple sheets found matching pattern: ",
+                    "*", assay, "_index*|*index_", assay, "*"
                 )
             )
         }
