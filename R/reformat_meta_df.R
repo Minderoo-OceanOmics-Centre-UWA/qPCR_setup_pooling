@@ -63,21 +63,35 @@ reformat_meta_df <- function(meta_df,
             
             # This will be true for most plates
           } else {
-            sample_rows[assay][[1]] <- rbind.fill(
-              sample_rows[assay][[1]][1:left_of_controls, ],
-              control_rows,
-              sample_rows[assay][[1]][(left_of_controls + 1):nrow(sample_rows[assay][[1]]), ]
-            )
-            
-            prev_left_of_controls <- left_of_controls
-            left_of_controls <- (
-              left_of_controls +
+            # We need to handle the last plate differently if the plate is filled completely with samples  
+            if (plate_num == plate_count[assay][[1]] & left_of_controls == nrow(sample_rows[assay][[1]])) {
+              sample_rows[assay][[1]] <- rbind.fill(
+                sample_rows[assay][[1]][1:left_of_controls, ],
+                control_rows
+              )
+                
+              prev_left_of_controls <- left_of_controls
+              left_of_controls <- (
+                left_of_controls +
                 control_count +
                 sample_count_per_plate
-            )
+              )
+            } else {
+              sample_rows[assay][[1]] <- rbind.fill(
+                sample_rows[assay][[1]][1:left_of_controls, ],
+                control_rows,
+                sample_rows[assay][[1]][(left_of_controls + 1):nrow(sample_rows[assay][[1]]), ]
+              )
+                
+              prev_left_of_controls <- left_of_controls
+              left_of_controls <- (
+                left_of_controls +
+                control_count +
+                sample_count_per_plate
+              )
+            }
           }
         }
-        
         sample_ids[assay][[1]] <- sample_rows[assay][[1]]$SAMPLEID
         sample_count[assay][[1]] <- length(sample_ids[assay][[1]])
     }
