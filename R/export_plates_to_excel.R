@@ -75,6 +75,14 @@ export_plates_to_excel <- function(assays,
                     is.na(big_plates[key][[1]]) | big_plates[key][[1]] == "NA",
                     ""
                 )
+                
+                if (strategy == "UDI") {
+                    # remove all of first row and column except for the very first cell
+                    plates[key][[1]][1,2:ncol(plates[key][[1]])] <- NA
+                    plates[key][[1]][2:nrow(plates[key][[1]]),1] <- NA
+                    big_plates[key][[1]][1,2:ncol(big_plates[key][[1]])] <- NA
+                    big_plates[key][[1]][2:nrow(big_plates[key][[1]]),1] <- NA
+                }
 
                 # Write the data to the sheet
                 writeData(
