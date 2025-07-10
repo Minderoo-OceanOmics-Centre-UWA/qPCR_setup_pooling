@@ -20,7 +20,8 @@ meta_to_plates <- function(input_file,
                            controls = c("NTC", "ITC"),
                            control_pattern = "WC|DI|EB|BC|NTC|ITC|Cont|BL",
                            skip_plates = list(),
-                           skip_samples = list()) {
+                           skip_samples = list(),
+                           strategy = "UDI") {
   
     # Make sure the plate_height is a valid number
     if (plate_height > 13) {
@@ -105,7 +106,7 @@ meta_to_plates <- function(input_file,
                 message("Error: You may have too many samples\n", e)
             }
         )
-      
+        
         fw_count[assay][[1]] <- get_value_when_num_le_cutoff(
             sample_count[assay][[1]],
             sample_cutoffs[assay][[1]],
@@ -130,7 +131,8 @@ meta_to_plates <- function(input_file,
         plate_height,
         plate_width,
         run,
-        sample_ids
+        sample_ids,
+        strategy
     )
 
     position_df <- create_position_df(
