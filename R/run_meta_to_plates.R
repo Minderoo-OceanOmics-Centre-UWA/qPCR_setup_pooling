@@ -13,11 +13,14 @@ samples_to_skip <- list(
   "MiFish" = 0
 )
 
+# strategy can be 'UDI' for unique dual-index, or 'UC' for unique combinatorial
+
 meta_to_plates(
   input_file,
   output_file,
   assays,
   run,
   skip_plates = plates_to_skip,
-  skip_samples = samples_to_skip
+  skip_samples = samples_to_skip,
+  strategy = "UC"
 )
