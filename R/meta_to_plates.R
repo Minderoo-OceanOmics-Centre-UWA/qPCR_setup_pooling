@@ -228,7 +228,8 @@ meta_to_plates <- function(input_file,
         position_df,
         output_file,
         plate_height,
-        plate_count
+        plate_count,
+        strategy
     )
 
     for (assay in assays) {
