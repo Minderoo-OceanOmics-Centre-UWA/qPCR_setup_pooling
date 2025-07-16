@@ -5,7 +5,8 @@ export_plates_to_excel <- function(assays,
                                    position_df,
                                    output_file,
                                    plate_height,
-                                   plate_count) {
+                                   plate_count,
+                                   strategy) {
     # Create a workbook object
     wb <- createWorkbook()
 
