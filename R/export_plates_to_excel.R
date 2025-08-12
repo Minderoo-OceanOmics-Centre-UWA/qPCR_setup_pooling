@@ -148,17 +148,32 @@ export_plates_to_excel <- function(assays,
       )
     }
 
-    colnames(position_df) <- c(
-        "sample",
-        "assay",
-        "replicate",
-        "pos",
-        "sample_replicate",
-        "plate_number",
-        "assay_plate_number_pos",
-        "plate_number_pos",
-        "sample_type"
-    )
+    if ("project" %in% colnames(position_df)) {
+        colnames(position_df) <- c(
+            "sample",
+            "assay",
+            "project",
+            "replicate",
+            "pos",
+            "sample_replicate",
+            "plate_number",
+            "assay_plate_number_pos",
+            "plate_number_pos",
+            "sample_type"
+        )
+    } else {
+        colnames(position_df) <- c(
+            "sample",
+            "assay",
+            "replicate",
+            "pos",
+            "sample_replicate",
+            "plate_number",
+            "assay_plate_number_pos",
+            "plate_number_pos",
+            "sample_type"
+        )
+    }
     writeData(
         wb,
         sheet = "position_df",
