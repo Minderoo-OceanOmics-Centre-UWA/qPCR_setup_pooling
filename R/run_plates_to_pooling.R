@@ -137,215 +137,450 @@ export_biomek_pooling_workbook <- function(assays,
                                            position_df_pool,
                                            minipool_overview,
                                            output_dir) {
-  # create a blank dataframe to output loop data into
-  pooling_df <- data.frame()
-
-  # identify variables for loop below
-  minipool_calcs     <- list()
-  volume_ranges      <- list()
-  minipool_calc_vols <- list()
-  minipool_plots     <- list()
-  volume_sums        <- c()
-  volume_beads       <- c()
-  plate_num          <- 0
-  book               <- 0
-  sam_type_num       <- 0
-  biomek_deck_pos    <- 1
-  assay_num          <- 0
-  out_df             <- data.frame(
-    assay = NULL,
-    plate_number = NULL,
-    SourcePosition = NULL,
-    SourceWell = NULL,
-    Volume = NULL,
-    DestinationPosition = NULL,
-    DestinationWell = NULL
-  )
-  out_dfs            <- list()
-
-  # Loop that will cycle through assays, plate numbers, and sample types
-  for (curr_assay in assays) {
-    subs      <- position_df_pool |> filter(assay == curr_assay)
-    assay_num <- assay_num + 1
-    for (curr_plate in plate_numbers[curr_assay][[1]]) {
-      unique_sam_types <- unique(subs$sample_type)
-      plate_num        <- plate_num + 1
-      keys             <- c()
-
-      for (sam_type in unique_sam_types) {
-        curr_key <- paste0(curr_assay, "_", curr_plate, "_", sam_type)
-        keys     <- append(keys, curr_key)
-
-        # Minipool calculations per plate per assay
-
-        sub_minipool <- minipool_overview |>
-          filter(assay == curr_assay) |>
-          filter(plate_number == curr_plate) |>
-          filter(sample_type == sam_type) |>
-          pull(n_groups)
-        
-        minipool_calcs[curr_key] <- subs %>%
-          filter(
-            plate_number == curr_plate &
-              sample_type == sam_type) %>%
-          mutate(miniPool = cut(mean,
-                                breaks = sub_minipool),
-                 miniPool_id = as.integer(cut(mean,
-                                              breaks = sub_minipool))) %>%
-          data.frame() %>%
-          list()
-
-        # add volume to pool as well as info on tube destination
-
-        volume_ranges[curr_key] <- tibble(
-          miniPool_id = 1:6,
-          vol_ul = rev(
-            seq(
-              from = 4,
-              by = 1,
-              length.out = 6
-            )
-          )
-        ) %>%
-          data.frame() %>%
-          list()
-        #  p_num <- substr(curr_plate, 6, nchar(curr_plate))
-
-
-        sam_type_num <- sam_type_num + 1
-        if (sam_type_num > length(unique_sam_types)) {
-          sam_type_num    <- 1
-          biomek_deck_pos <- biomek_deck_pos + 1
-          if (biomek_deck_pos > 4) {
-            biomek_deck_pos    <- 1
-            book               <- book + 1
-            out_dfs[[book]]    <- out_df
-
-            out_df             <- data.frame(
-              assay = NULL,
-              plate_number = NULL,
-              SourcePosition = NULL,
-              SourceWell = NULL,
-              Volume = NULL,
-              DestinationPosition = NULL,
-              DestinationWell = NULL
-            )
-          }
-        }
-        sourcepos <- paste0("qPCR", biomek_deck_pos)
-
-        if (sam_type == "sample") {
-          dwell <- paste0("A", biomek_deck_pos)
-        } else {
-          dwell <- paste0("B", biomek_deck_pos)
-        }
-
-        # This try catch exists for when a plate is missing a sampletype
-        minipool_calc_vols[curr_key] <- tryCatch({
-          minipool_calcs[curr_key][[1]] %>%
-            left_join(
-              .,
-              volume_ranges[curr_key][[1]],
-              by = "miniPool_id"
-            ) %>%
-            mutate(
-              DestinationPosition = "PoolTubes",
-              DestinationWell = dwell
-            ) %>%
-            data.frame() %>%
-            list()
-        }, error = function(e){
-          minipool_calcs[curr_key][[1]] %>%
-            left_join(
-              .,
-              volume_ranges[curr_key][[1]],
-              by = "miniPool_id"
-            ) %>%
-            mutate(
-              DestinationPosition = NULL,
-              DestinationWell = NULL
-            ) %>%
-            data.frame() %>%
-            list()
-        })
-
-        minipool_calc_vols[curr_key][[1]] <- minipool_calc_vols[curr_key][[1]] %>%
-          mutate(DestinationWell = ifelse(grepl("^ITC_", SAMPLE), paste0("C", assay_num), DestinationWell))
-
-        # Set theme for plots
-        theme_set(theme_bw() +
-                    theme(
-                      panel.grid = element_blank(),
-                      axis.text = element_text(size = 12, colour = "black"),
-                      axis.title = element_text(size = 14, colour = "black"),
-                      strip.text = element_text(size = 12, colour = "black"),
-                      legend.position = "bottom",
-                      legend.text = element_text(size = 11, colour = "black")
+    # create a blank dataframe to output loop data into
+    pooling_df <- data.frame()
+    
+    # identify variables for loop below
+    minipool_calcs     <- list()
+    volume_ranges      <- list()
+    minipool_calc_vols <- list()
+    minipool_plots     <- list()
+    volume_sums        <- c()
+    volume_beads       <- c()
+    plate_num          <- 0
+    book               <- 0
+    sam_type_num       <- 0
+    biomek_deck_pos    <- 1
+    assay_num          <- 0
+    out_df             <- data.frame(
+        assay = NULL,
+        plate_number = NULL,
+        SourcePosition = NULL,
+        SourceWell = NULL,
+        Volume = NULL,
+        DestinationPosition = NULL,
+        DestinationWell = NULL
+    )
+    out_dfs            <- list()
+    
+    # Loop that will cycle through assays, plate numbers, and sample types
+    for (curr_assay in assays) {
+        subs      <- position_df_pool |> filter(assay == curr_assay)
+        assay_num <- assay_num + 1
+        for (curr_plate in plate_numbers[curr_assay][[1]]) {
+            unique_sam_types <- unique(subs$sample_type)
+            plate_num        <- plate_num + 1
+            keys             <- c()
+            
+            for (sam_type in unique_sam_types) {
+                curr_key <- paste0(curr_assay, "_", curr_plate, "_", sam_type)
+                keys     <- append(keys, curr_key)
+                
+                # Minipool calculations per plate per assay
+                
+                sub_minipool <- minipool_overview |>
+                    filter(assay == curr_assay) |>
+                    filter(plate_number == curr_plate) |>
+                    filter(sample_type == sam_type) |>
+                    pull(n_groups)
+                
+                minipool_calcs[curr_key] <- subs %>%
+                    filter(
+                        plate_number == curr_plate &
+                            sample_type == sam_type) %>%
+                    mutate(miniPool = cut(mean,
+                                          breaks = sub_minipool),
+                           miniPool_id = as.integer(cut(mean,
+                                                        breaks = sub_minipool))) %>%
+                    data.frame() %>%
+                    list()
+                
+                # add volume to pool as well as info on tube destination
+                
+                volume_ranges[curr_key] <- tibble(
+                    miniPool_id = 1:6,
+                    vol_ul = rev(
+                        seq(
+                            from = 4,
+                            by = 1,
+                            length.out = 6
+                        )
                     )
-        )
-        #  check "minipools" in a plot to confirm group/volume allocation
-        minipool_plots[[curr_key]] <- ggplot(
-          minipool_calc_vols[curr_key][[1]],
-          aes(x = sample_replicate, y = mean)
-        ) +
-          geom_point(aes(colour = as.factor(miniPool_id)), size = 2) +
-          scale_y_continuous(expand = c(0,0)) +
-          xlab("Sample") +
-          ylab("Mean EPF") +
-          theme(axis.text.y = element_text(size = 5)) +
-          coord_flip()
-
-        if (sam_type_num == length(unique_sam_types)) {
-          if (length(unique_sam_types) == 1) {
-            tmp_df <- minipool_calc_vols[keys[1]][[1]] %>%
-            mutate(SourcePosition = sourcepos) %>%
-            dplyr::select(
-              assay,
-              plate_number,
-              SourcePosition,
-              SourceWell = pos,
-              Volume = vol_ul,
-              DestinationPosition,
-              DestinationWell
-            ) %>%
-            arrange(sample_order(SourceWell))
-          } else if (length(unique_sam_types) == 2) {
-            tmp_df <- rbind(
-              minipool_calc_vols[keys[1]][[1]],
-              minipool_calc_vols[keys[2]][[1]]
-            ) %>%
-            mutate(SourcePosition = sourcepos) %>%
-            dplyr::select(
-              assay,
-              plate_number,
-              SourcePosition,
-              SourceWell = pos,
-              Volume = vol_ul,
-              DestinationPosition,
-              DestinationWell
-            ) %>%
-            arrange(sample_order(SourceWell))
-          }
-
-          out_df <- rbind(out_df, tmp_df)
+                ) %>%
+                    data.frame() %>%
+                    list()
+                #  p_num <- substr(curr_plate, 6, nchar(curr_plate))
+                
+                
+                sam_type_num <- sam_type_num + 1
+                if (sam_type_num > length(unique_sam_types)) {
+                    sam_type_num    <- 1
+                    biomek_deck_pos <- biomek_deck_pos + 1
+                    if (biomek_deck_pos > 4) {
+                        biomek_deck_pos    <- 1
+                        book               <- book + 1
+                        out_dfs[[book]]    <- out_df
+                        
+                        out_df             <- data.frame(
+                            assay = NULL,
+                            plate_number = NULL,
+                            SourcePosition = NULL,
+                            SourceWell = NULL,
+                            Volume = NULL,
+                            DestinationPosition = NULL,
+                            DestinationWell = NULL
+                        )
+                    }
+                }
+                sourcepos <- paste0("qPCR", biomek_deck_pos)
+                
+                if (sam_type == "sample") {
+                    dwell <- paste0("A", biomek_deck_pos)
+                } else {
+                    dwell <- paste0("B", biomek_deck_pos)
+                }
+                
+                # This try catch exists for when a plate is missing a sampletype
+                minipool_calc_vols[curr_key] <- tryCatch({
+                    minipool_calcs[curr_key][[1]] %>%
+                        left_join(
+                            .,
+                            volume_ranges[curr_key][[1]],
+                            by = "miniPool_id"
+                        ) %>%
+                        mutate(
+                            DestinationPosition = "PoolTubes",
+                            DestinationWell = dwell
+                        ) %>%
+                        data.frame() %>%
+                        list()
+                }, error = function(e){
+                    minipool_calcs[curr_key][[1]] %>%
+                        left_join(
+                            .,
+                            volume_ranges[curr_key][[1]],
+                            by = "miniPool_id"
+                        ) %>%
+                        mutate(
+                            DestinationPosition = NULL,
+                            DestinationWell = NULL
+                        ) %>%
+                        data.frame() %>%
+                        list()
+                })
+                
+                minipool_calc_vols[curr_key][[1]] <- minipool_calc_vols[curr_key][[1]] %>%
+                    mutate(DestinationWell = ifelse(grepl("^ITC_", SAMPLE), paste0("C", assay_num), DestinationWell))
+                
+                # Set theme for plots
+                theme_set(theme_bw() +
+                              theme(
+                                  panel.grid = element_blank(),
+                                  axis.text = element_text(size = 12, colour = "black"),
+                                  axis.title = element_text(size = 14, colour = "black"),
+                                  strip.text = element_text(size = 12, colour = "black"),
+                                  legend.position = "bottom",
+                                  legend.text = element_text(size = 11, colour = "black")
+                              )
+                )
+                #  check "minipools" in a plot to confirm group/volume allocation
+                minipool_plots[[curr_key]] <- ggplot(
+                    minipool_calc_vols[curr_key][[1]],
+                    aes(x = sample_replicate, y = mean)
+                ) +
+                    geom_point(aes(colour = as.factor(miniPool_id)), size = 2) +
+                    scale_y_continuous(expand = c(0,0)) +
+                    xlab("Sample") +
+                    ylab("Mean EPF") +
+                    theme(axis.text.y = element_text(size = 5)) +
+                    coord_flip()
+                
+                if (sam_type_num == length(unique_sam_types)) {
+                    if (length(unique_sam_types) == 1) {
+                        tmp_df <- minipool_calc_vols[keys[1]][[1]] %>%
+                            mutate(SourcePosition = sourcepos) %>%
+                            dplyr::select(
+                                assay,
+                                plate_number,
+                                SourcePosition,
+                                SourceWell = pos,
+                                Volume = vol_ul,
+                                DestinationPosition,
+                                DestinationWell
+                            ) %>%
+                            arrange(sample_order(SourceWell))
+                    } else if (length(unique_sam_types) == 2) {
+                        tmp_df <- rbind(
+                            minipool_calc_vols[keys[1]][[1]],
+                            minipool_calc_vols[keys[2]][[1]]
+                        ) %>%
+                            mutate(SourcePosition = sourcepos) %>%
+                            dplyr::select(
+                                assay,
+                                plate_number,
+                                SourcePosition,
+                                SourceWell = pos,
+                                Volume = vol_ul,
+                                DestinationPosition,
+                                DestinationWell
+                            ) %>%
+                            arrange(sample_order(SourceWell))
+                    }
+                    
+                    out_df <- rbind(out_df, tmp_df)
+                }
+                
+                pdf(paste0(output_dir, curr_key, "_minipool_plot.pdf"))
+                print(minipool_plots[curr_key])
+                dev.off()
+            }
         }
-
-        pdf(paste0(output_dir, curr_key, "_minipool_plot.pdf"))
-        print(minipool_plots[curr_key])
-        dev.off()
-      }
     }
-  }
-  book              <- book + 1
-  out_dfs[[book]]   <- out_df
+    book              <- book + 1
+    out_dfs[[book]]   <- out_df
+    
+    for (i in 1:book) {
+        write_csv(out_dfs[[i]], paste0(output_dir, "/biomek_pooling_workbook_", i,".csv")) 
+    }
+    
+    print(paste0("Finished! Output files in: ", output_dir))
+    
+    return(minipool_calc_vols)
+}
 
-  for (i in 1:book) {
-    write_csv(out_dfs[[i]], paste0(output_dir, "/biomek_pooling_workbook_", i,".csv")) 
-  }
-
-  print(paste0("Finished! Output files in: ", output_dir))
-
-  return(minipool_calc_vols)
+export_biomek_pooling_workbook_project_ver <- function(assays,
+                                              plate_numbers,
+                                              position_df_pool,
+                                              minipool_overview,
+                                              output_dir) {
+    # create a blank dataframe to output loop data into
+    pooling_df <- data.frame()
+    
+    # identify variables for loop below
+    minipool_calcs     <- list()
+    volume_ranges      <- list()
+    minipool_calc_vols <- list()
+    minipool_plots     <- list()
+    volume_sums        <- c()
+    volume_beads       <- c()
+    plate_num          <- 0
+    book               <- 0
+    sam_type_num       <- 0
+    biomek_deck_pos    <- 1
+    assay_num          <- 0
+    out_df             <- data.frame(
+        assay = NULL,
+        plate_number = NULL,
+        SourcePosition = NULL,
+        SourceWell = NULL,
+        Volume = NULL,
+        DestinationPosition = NULL,
+        DestinationWell = NULL
+    )
+    out_dfs            <- list()
+    minipool_overview[is.na(minipool_overview[, "project"]), "project"] <- "ITC_NTC_group"
+    position_df_pool[is.na(position_df_pool[, "project"]), "project"] <- "ITC_NTC_group"
+    
+    # Loop that will cycle through assays, plate numbers, and sample types
+    for (curr_assay in assays) {
+        subs      <- position_df_pool |> filter(assay == curr_assay)
+        
+        assay_num <- assay_num + 1
+        for (curr_plate in plate_numbers[curr_assay][[1]]) {
+            unique_sam_types <- unique(subs$sample_type)
+            unique_projects  <- unique(subs[subs$plate_number == curr_plate,]$project)
+            plate_num        <- plate_num + 1
+            for(project_i in 1:(length(unique_projects))) {
+                curr_project <- unique_projects[project_i]
+                #if (curr_project == "ITC_NTC_group") {
+                    
+                #} else {
+                    keys             <- c()
+                    
+                    for (sam_type in unique_sam_types) {
+                        curr_key <- paste0(curr_assay, "_", curr_plate, "_", sam_type, "_", curr_project)
+                        keys     <- append(keys, curr_key)
+                        
+                        # Minipool calculations per plate per assay
+                        
+                        sub_minipool <- minipool_overview |>
+                            filter(assay == curr_assay) |>
+                            filter(plate_number == curr_plate) |>
+                            filter(sample_type == sam_type) |>
+                            filter(project == curr_project) |>
+                            pull(n_groups)
+                        
+                        minipool_calcs[curr_key] <- subs %>%
+                            filter(
+                                plate_number == curr_plate &
+                                    sample_type == sam_type &
+                                    project == curr_project) %>%
+                            mutate(miniPool = cut(mean,
+                                                  breaks = sub_minipool),
+                                   miniPool_id = as.integer(cut(mean,
+                                                                breaks = sub_minipool))) %>%
+                            data.frame() %>%
+                            list()
+                        
+                        # add volume to pool as well as info on tube destination
+                        
+                        volume_ranges[curr_key] <- tibble(
+                            miniPool_id = 1:6,
+                            vol_ul = rev(
+                                seq(
+                                    from = 4,
+                                    by = 1,
+                                    length.out = 6
+                                )
+                            )
+                        ) %>%
+                            data.frame() %>%
+                            list()
+                        #  p_num <- substr(curr_plate, 6, nchar(curr_plate))
+                        
+                        
+                        sam_type_num <- sam_type_num + 1
+                        if (sam_type_num > length(unique_sam_types)) {
+                            sam_type_num    <- 1
+                            if (curr_project != "ITC_NTC_group") {
+                                biomek_deck_pos <- biomek_deck_pos + 1
+                            }
+                            if (biomek_deck_pos > 4) {
+                                biomek_deck_pos    <- 1
+                                book               <- book + 1
+                                out_dfs[[book]]    <- out_df
+                                
+                                out_df             <- data.frame(
+                                    assay = NULL,
+                                    plate_number = NULL,
+                                    SourcePosition = NULL,
+                                    SourceWell = NULL,
+                                    Volume = NULL,
+                                    DestinationPosition = NULL,
+                                    DestinationWell = NULL
+                                )
+                            }
+                        }
+                        sourcepos <- paste0("qPCR", biomek_deck_pos)
+                        
+                        if (sam_type == "sample") {
+                            dwell <- paste0("A", biomek_deck_pos)
+                        } else {
+                            dwell <- paste0("B", biomek_deck_pos)
+                        }
+                        
+                        # This try catch exists for when a plate is missing a sampletype
+                        minipool_calc_vols[curr_key] <- tryCatch({
+                            minipool_calcs[curr_key][[1]] %>%
+                                left_join(
+                                    .,
+                                    volume_ranges[curr_key][[1]],
+                                    by = "miniPool_id"
+                                ) %>%
+                                mutate(
+                                    DestinationPosition = "PoolTubes",
+                                    DestinationWell = dwell
+                                ) %>%
+                                data.frame() %>%
+                                list()
+                        }, error = function(e){
+                            minipool_calcs[curr_key][[1]] %>%
+                                left_join(
+                                    .,
+                                    volume_ranges[curr_key][[1]],
+                                    by = "miniPool_id"
+                                ) %>%
+                                mutate(
+                                    DestinationPosition = NULL,
+                                    DestinationWell = NULL
+                                ) %>%
+                                data.frame() %>%
+                                list()
+                        })
+                        
+                        minipool_calc_vols[curr_key][[1]] <- minipool_calc_vols[curr_key][[1]] %>%
+                            #mutate(DestinationWell = ifelse(grepl("^ITC_", SAMPLE), paste0("C", biomek_deck_pos), DestinationWell))
+                            mutate(DestinationWell = ifelse(grepl("^ITC_", SAMPLE), paste0("C", assay_num), DestinationWell))
+                        minipool_calc_vols[curr_key][[1]] <- minipool_calc_vols[curr_key][[1]] %>%
+                            #mutate(DestinationWell = ifelse(grepl("^ITC_", SAMPLE), paste0("C", biomek_deck_pos), DestinationWell))
+                            mutate(DestinationWell = ifelse(grepl("^NTC_", SAMPLE), paste0("D", assay_num), DestinationWell))
+                        
+                        # Set theme for plots
+                        theme_set(theme_bw() +
+                                      theme(
+                                          panel.grid = element_blank(),
+                                          axis.text = element_text(size = 12, colour = "black"),
+                                          axis.title = element_text(size = 14, colour = "black"),
+                                          strip.text = element_text(size = 12, colour = "black"),
+                                          legend.position = "bottom",
+                                          legend.text = element_text(size = 11, colour = "black")
+                                      )
+                        )
+                        #  check "minipools" in a plot to confirm group/volume allocation
+                        minipool_plots[[curr_key]] <- ggplot(
+                            minipool_calc_vols[curr_key][[1]],
+                            aes(x = sample_replicate, y = mean)
+                        ) +
+                            geom_point(aes(colour = as.factor(miniPool_id)), size = 2) +
+                            scale_y_continuous(expand = c(0,0)) +
+                            xlab("Sample") +
+                            ylab("Mean EPF") +
+                            theme(axis.text.y = element_text(size = 5)) +
+                            coord_flip()
+                        
+                        if (sam_type_num == length(unique_sam_types)) {
+                            if (length(unique_sam_types) == 1) {
+                                tmp_df <- minipool_calc_vols[keys[1]][[1]] %>%
+                                    mutate(SourcePosition = sourcepos) %>%
+                                    dplyr::select(
+                                        assay,
+                                        plate_number,
+                                        SourcePosition,
+                                        SourceWell = pos,
+                                        Volume = vol_ul,
+                                        DestinationPosition,
+                                        DestinationWell
+                                    ) %>%
+                                    arrange(sample_order(SourceWell))
+                            } else if (length(unique_sam_types) == 2) {
+                                tmp_df <- rbind(
+                                    minipool_calc_vols[keys[1]][[1]],
+                                    minipool_calc_vols[keys[2]][[1]]
+                                ) %>%
+                                    mutate(SourcePosition = sourcepos) %>%
+                                    dplyr::select(
+                                        assay,
+                                        plate_number,
+                                        SourcePosition,
+                                        SourceWell = pos,
+                                        Volume = vol_ul,
+                                        DestinationPosition,
+                                        DestinationWell
+                                    ) %>%
+                                    arrange(sample_order(SourceWell))
+                            }
+                            
+                            out_df <- rbind(out_df, tmp_df)
+                        }
+                        
+                        pdf(paste0(output_dir, curr_key, "_minipool_plot.pdf"))
+                        print(minipool_plots[curr_key])
+                        dev.off()
+                    }
+                #}
+            }
+        }
+    }
+    book              <- book + 1
+    out_dfs[[book]]   <- out_df
+    
+    for (i in 1:book) {
+        write_csv(out_dfs[[i]], paste0(output_dir, "/biomek_pooling_workbook_", i,".csv")) 
+    }
+    
+    print(paste0("Finished! Output files in: ", output_dir))
+    
+    return(minipool_calc_vols)
 }
 
 print_failed_rep_message <- function(rep_failed_summary, assays) {
@@ -450,6 +685,9 @@ import_position_df <- function(excel_file) {
   colnames(position_df)[which(names(position_df) == "SAMPLE_ID")] <- "sample_id"
   colnames(position_df)[which(names(position_df) == "POS")] <- "pos"
   colnames(position_df)[which(names(position_df) == "ASSAY_PLATE_NUMBER_POS")] <- "assay_plate_number_pos"
+  if ("PROJECT" %in% colnames(position_df)) {
+    colnames(position_df)[which(names(position_df) == "PROJECT")] <- "project"
+  }
 
   return(position_df)
 }
@@ -859,19 +1097,38 @@ position_df_pool <- position_df_pool[(position_df_pool$sample_type == "control" 
 # These calculations use grouping of samples based on "minipool" approach 
 # For each plate 6 minipools are created for the samples
 
-minipool_overview <-   position_df_pool %>%
-  group_by(assay, plate_number, sample_type) %>%
-  dplyr::summarise(
-    count_samples = n_distinct(SAMPLE),
-    min =  min(mean),
-    max = max(mean),
-    diff_mean = max(mean) - min(mean),
-    n_groups = 6
-  )
+# if project column exists
+if ("project" %in% colnames(position_df_pool)) {
+    minipool_overview <-   position_df_pool %>%
+      group_by(assay, plate_number, sample_type, project) %>%
+      dplyr::summarise(
+        count_samples = n_distinct(SAMPLE),
+        min =  min(mean),
+        max = max(mean),
+        diff_mean = max(mean) - min(mean),
+        n_groups = 6
+      )
+} else {
+    minipool_overview <-   position_df_pool %>%
+        group_by(assay, plate_number, sample_type) %>%
+        dplyr::summarise(
+            count_samples = n_distinct(SAMPLE),
+            min =  min(mean),
+            max = max(mean),
+            diff_mean = max(mean) - min(mean),
+            n_groups = 6
+        )
+}
 position_df_pool_filt <- position_df_pool[!is.na(position_df_pool$mean),]
 minipool_overview_filt <- minipool_overview[!is.na(minipool_overview$diff_mean),] 
-minipool_calc_vols <- export_biomek_pooling_workbook(assays, plate_numbers, position_df_pool_filt, minipool_overview_filt, output_dir)
 
+# if project column exists
+if ("project" %in% colnames(position_df_pool_filt)) {
+    minipool_calc_vols <- export_biomek_pooling_workbook_project_ver(assays, plate_numbers, position_df_pool_filt, minipool_overview_filt, output_dir)
+} else {
+    minipool_calc_vols <- export_biomek_pooling_workbook(assays, plate_numbers, position_df_pool_filt, minipool_overview_filt, output_dir)
+}
+    
 # Minipool summaries including final volume in pooled tube & the number of samples/controls in each tube
 minipool_vols_df      <- do.call(rbind.data.frame, minipool_calc_vols)
 minipool_vols_summary <- minipool_vols_df %>%
@@ -897,3 +1154,4 @@ for (assay in assays) {
   
   write_csv(meta_df, paste0(output_dir, "/samplesheet_", assay, ".csv"))
 }
+
