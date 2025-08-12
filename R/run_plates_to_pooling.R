@@ -445,8 +445,9 @@ export_biomek_pooling_workbook_project_ver <- function(assays,
                             if (curr_project != "ITC_NTC_group") {
                                 biomek_deck_pos <- biomek_deck_pos + 1
                             }
-                            if (biomek_deck_pos > 4) {
+                            if (plate_num > 4) {
                                 biomek_deck_pos    <- 1
+                                plate_num          <- 1
                                 book               <- book + 1
                                 out_dfs[[book]]    <- out_df
                                 
@@ -461,7 +462,7 @@ export_biomek_pooling_workbook_project_ver <- function(assays,
                                 )
                             }
                         }
-                        sourcepos <- paste0("qPCR", biomek_deck_pos)
+                        sourcepos <- paste0("qPCR", plate_num)
                         
                         if (sam_type == "sample") {
                             dwell <- paste0("A", biomek_deck_pos)
