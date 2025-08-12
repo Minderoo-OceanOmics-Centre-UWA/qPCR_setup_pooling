@@ -7,9 +7,15 @@ create_position_df <- function(meta_df,
 
     # Create a position_df to hold information that can link
     # the samples to the big plate positions
-    position_df                           <- meta_df[, c("SAMPLEID", "ASSAY")]
+    if ("PROJECT" %in% colnames(meta_df)) {
+        position_df                           <- meta_df[, c("SAMPLEID", "ASSAY", "PROJECT")]
+        colnames(position_df)[colnames(position_df) == "PROJECT"] <- "project"
+    } else {
+        position_df                           <- meta_df[, c("SAMPLEID", "ASSAY")]
+    }
     colnames(position_df)[colnames(position_df) == "SAMPLEID"] <- "sample_id"
     colnames(position_df)[colnames(position_df) == "ASSAY"] <- "assay"
+    
     position_df["Pos"]                    <- NULL
     position_df["sample_replicate"]       <- NULL
     position_df["replicate"]              <- NULL
