@@ -121,6 +121,7 @@ meta_to_plates(
 - `control_pattern`: A string that will be used to flag samples as control samples. Default = "WC|DI|EB|BC|NTC|ITC|Cont|BL". This default value means that any sample containing "WC", "DI", "EB", "BC", "NTC", "ITC", "Cont", or "BL" will be flagged as a control sample.
 - `skip_plates`: How many plates would you like to skip? Allows different values for each assay.
 - `skip_samples`: How many samples would you like to skip? Allows different values for each assay. Can be used with skip_plates (e.g., you can skip 2 plates and 10 samples).
+- `strategy`: Can be "UDI" for unique dual-index, or "UC" for unique combinatorial
 
 ### meta_to_plates() input
 
