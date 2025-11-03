@@ -11,10 +11,11 @@ suppressMessages(library(readxl))
 suppressMessages(library(openxlsx))
 suppressMessages(library(plyr))
 
-meta_to_plates <- function(input_file,
+meta_to_plates <- function(metadata,
+                           index_file,
                            output_file,
                            assays,
-                           run,
+                           run = "run1",
                            plate_width = 12,
                            plate_height = 8,
                            controls = c("NTC", "ITC"),
@@ -34,14 +35,17 @@ meta_to_plates <- function(input_file,
     }
     
     # Import our data
-    meta_df  <- import_meta_df(input_file, run)
-    index_df <- import_index_df(input_file, assays)
+    meta_df  <- import_meta_df(metadata, run)
+    index_df <- import_index_df(index_file, assays)
   
     # Remove invisible columns in Excel
     meta_df  <- meta_df %>% dplyr::select(-contains("..."))
     # Remove control samples that shouldn't be in the input metadata
     for (control in controls) {
-        meta_df <- meta_df[!grepl(control, meta_df$SAMPLEID),]
+        meta_df <- data.frame(meta_df[!grepl(control, meta_df$samp_name),])
+        if (length(colnames(meta_df)) == 1) {
+            colnames(meta_df) <- "samp_name"
+        }
     }
     
     sample_ids            <- list()
@@ -67,11 +71,11 @@ meta_to_plates <- function(input_file,
             for (i in 1:skip_samples[assay][[1]]) {
                 sample_ids[assay][[1]] <- c(sample_ids[assay][[1]], paste0("FAKESAMPLE_", i)) 
             }
-            fake_meta_df <- data.frame(SAMPLEID = sample_ids[assay][[1]], SEQUENCINGRUN = run)
+            fake_meta_df <- data.frame(samp_name = sample_ids[assay][[1]])
             tmp_meta_df  <- rbind.fill(fake_meta_df, tmp_meta_df)
         }
       
-        sample_ids[assay][[1]] <- tmp_meta_df$SAMPLEID
+        sample_ids[assay][[1]] <- tmp_meta_df$samp_name
       
         # Get vectors to be used to get `plate_count`, `fw_count`, and `rv_count`
         # These vectors are:
@@ -182,9 +186,6 @@ meta_to_plates <- function(input_file,
             last_sample  <- last_sample + (plate_height * plate_width)
 
             # We ran out of rv primers, so move onto next set of fw primers
-            #
-            # TODO: I may need to test this more to make sure it works
-            #
             if ((last_rv + plate_height) > rv_count[assay][[1]]) {
                 first_rv    <- 1
                 last_rv     <- plate_height
@@ -201,7 +202,7 @@ meta_to_plates <- function(input_file,
     meta_df$sample_type <- NA
     control_vect        <- str_split_1(control_pattern, "\\|")
     for (row in 1:nrow(meta_df)) {
-      sample      <- meta_df[row, "SAMPLEID"]
+      sample      <- meta_df[row, "samp_name"]
       sample_type <- "sample"
       
       for (i in control_vect) {
@@ -215,7 +216,7 @@ meta_to_plates <- function(input_file,
     }
     
     meta_df <- meta_df %>%
-      filter(!grepl("^FAKESAMPLE_", SAMPLEID))
+      filter(!grepl("^FAKESAMPLE_", samp_name))
     
     position_df <- position_df %>%
       filter(!grepl("^FAKESAMPLE_", sample_id))
