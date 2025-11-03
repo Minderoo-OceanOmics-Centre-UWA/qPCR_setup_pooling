@@ -35,7 +35,15 @@ meta_to_plates <- function(metadata,
     }
     
     # Import our data
-    meta_df  <- import_meta_df(metadata, run)
+    if (length(metadata) == 1) {
+        meta_df <- import_meta_df(metadata, run)
+    } else {
+        meta_df <- data.frame() 
+        for (file in metadata) {
+            tmp_df  <- import_meta_df(file, run)
+            meta_df <- rbind(meta_df, tmp_df)
+        }
+    }
     index_df <- import_index_df(index_file, assays)
   
     # Remove invisible columns in Excel
