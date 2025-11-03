@@ -22,6 +22,7 @@ output_dir   <- "test_data/output/"
 plate_width  <- 12
 plate_height <- 8
 assays       <- c("16S", "MiFish")
+suffix       <- ""
 
 
 ##########################################################
@@ -114,6 +115,7 @@ export_plate_pdfs <- function(df,
           curr_assay,
           "_",
           curr_plate,
+          suffix,
           ".pdf"
         )
       )
@@ -330,7 +332,7 @@ export_biomek_pooling_workbook <- function(assays,
                     out_df <- rbind(out_df, tmp_df)
                 }
                 
-                pdf(paste0(output_dir, curr_key, "_minipool_plot.pdf"))
+                pdf(paste0(output_dir, curr_key, suffix, "_minipool_plot.pdf"))
                 print(minipool_plots[curr_key])
                 dev.off()
             }
@@ -340,7 +342,7 @@ export_biomek_pooling_workbook <- function(assays,
     out_dfs[[book]]   <- out_df
     
     for (i in 1:book) {
-        write_csv(out_dfs[[i]], paste0(output_dir, "/biomek_pooling_workbook_", i,".csv")) 
+        write_csv(out_dfs[[i]], paste0(output_dir, "/biomek_pooling_workbook_", i, suffix, ".csv")) 
     }
     
     print(paste0("Finished! Output files in: ", output_dir))
@@ -564,7 +566,7 @@ export_biomek_pooling_workbook_project_ver <- function(assays,
                             out_df <- rbind(out_df, tmp_df)
                         }
                         
-                        pdf(paste0(output_dir, curr_key, "_minipool_plot.pdf"))
+                        pdf(paste0(output_dir, curr_key, "_minipool_plot", suffix, ".pdf"))
                         print(minipool_plots[curr_key])
                         dev.off()
                     }
@@ -576,7 +578,7 @@ export_biomek_pooling_workbook_project_ver <- function(assays,
     out_dfs[[book]]   <- out_df
     
     for (i in 1:book) {
-        write_csv(out_dfs[[i]], paste0(output_dir, "/biomek_pooling_workbook_", i,".csv")) 
+        write_csv(out_dfs[[i]], paste0(output_dir, "/biomek_pooling_workbook_", i, suffix, ".csv")) 
     }
     
     print(paste0("Finished! Output files in: ", output_dir))
@@ -925,14 +927,14 @@ print(rep_failed[(rep_failed$tm1_outside_sd == TRUE | rep_failed$epf_2_to_5 == T
 # Output rxns_to_check.csv
 ##########################################################
 
-write.csv(row.names = FALSE, rep_failed[(rep_failed$tm1_outside_sd == TRUE | rep_failed$epf_2_to_5 == TRUE | rep_failed$discard == "DISCARD") & rep_failed$sample_type == "sample", ], paste0(output_dir, "rxns_to_check.csv"))
+write.csv(row.names = FALSE, rep_failed[(rep_failed$tm1_outside_sd == TRUE | rep_failed$epf_2_to_5 == TRUE | rep_failed$discard == "DISCARD") & rep_failed$sample_type == "sample", ], paste0(output_dir, "rxns_to_check", suffix, ".csv"))
 
 
 ######################################################
 # Import rxns_to_check.csv and merge discard column
 ######################################################
 
-checked_runs <- read.csv(paste0(output_dir, "rxns_to_check.csv"))
+checked_runs <- read.csv(paste0(output_dir, "rxns_to_check", suffix, ".csv"))
 
 for (row in 1:nrow(checked_runs)) {
   id <- checked_runs[row, "assay_plate_number_pos"]
@@ -957,7 +959,7 @@ for (row in 1:nrow(checked_runs)) {
   rep_failed$discard[rep_failed$assay_plate_number_pos == id] <- disc
 }
 
-write.csv(row.names = FALSE, rep_failed, paste0(output_dir, "rxns_checked.csv"))
+write.csv(row.names = FALSE, rep_failed, paste0(output_dir, "rxns_checked", suffix, ".csv"))
 
 # summary of number of reps to be discarded per sample 
 rep_failed_summary <- rep_failed %>%   
@@ -1007,7 +1009,7 @@ if (nrow(reps_to_discard) != 0) {
     reps_to_discard <- cbind(reps_to_discard, sample)
 }
 
-write.csv(reps_to_discard, file = paste0(output_dir, "/reps_to_discard.csv"), row.names=FALSE, quote=FALSE)
+write.csv(reps_to_discard, file = paste0(output_dir, "/reps_to_discard", suffix, ".csv"), row.names=FALSE, quote=FALSE)
 
 
 ##########################################################
@@ -1140,7 +1142,7 @@ minipool_vols_summary <- minipool_vols_df %>%
   ungroup() %>%
   mutate(assay.plate_number.sample_type = paste(assay, plate_number, sample_type, sep = ".") )
 
-write_csv(minipool_vols_summary, paste0(output_dir, "/minipool_summary.csv"))
+write_csv(minipool_vols_summary, paste0(output_dir, "/minipool_summary", suffix, ".csv"))
 
 #confirm final tube volumes do not exceed 1.5 mL (or 1500 uL)
 
@@ -1153,6 +1155,6 @@ for (assay in assays) {
   
   meta_df$discarded <- ifelse(meta_df$sample %in% curr_disc_sams$sample, TRUE, meta_df$discarded)
   
-  write_csv(meta_df, paste0(output_dir, "/samplesheet_", assay, ".csv"))
+  write_csv(meta_df, paste0(output_dir, "/samplesheet_", assay, suffix, ".csv"))
 }
 
