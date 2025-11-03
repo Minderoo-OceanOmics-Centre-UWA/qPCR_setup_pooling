@@ -18,9 +18,9 @@ reformat_meta_df <- function(meta_df,
     
     for (assay in assays) {
         sample_rows[assay][[1]] <- data.frame(
-            SAMPLEID = sample_ids[assay][[1]],
-            SEQUENCINGRUN = run
+            samp_name = sample_ids[assay][[1]]
         )
+        sample_rows[assay][[1]]$TMP <- ""
         
         # Add control samples to meta_df.
         # We need to add the control samples at the end of each plate.
@@ -28,24 +28,22 @@ reformat_meta_df <- function(meta_df,
         fake_plates <- 0
         for (plate_num in 1:plate_count[assay][[1]]) {
           if (plate_num == 1) {
-              if (all(grepl("^FAKESAMPLE_", sample_rows[assay][[1]][1:left_of_controls, ]$SAMPLEID))) {
+              if (all(grepl("^FAKESAMPLE_", sample_rows[assay][[1]][1:left_of_controls, ]$samp_name))) {
                   fake_plates <- fake_plates + 1
               }  
           } else {
-            if (all(grepl("^FAKESAMPLE_", sample_rows[assay][[1]][(prev_left_of_controls + control_count + 1):left_of_controls, ]$SAMPLEID))) {
+            if (all(grepl("^FAKESAMPLE_", sample_rows[assay][[1]][(prev_left_of_controls + control_count + 1):left_of_controls, ]$samp_name))) {
               fake_plates <- fake_plates + 1
             }  
           }
           
           if ((plate_num - fake_plates) == 0) {
             control_rows <- data.frame(
-              SAMPLEID = paste0("FAKESAMPLE_", controls, "_", plate_num),
-              SEQUENCINGRUN = run
+                samp_name = paste0("FAKESAMPLE_", controls, "_", plate_num)
             )
           } else {
             control_rows <- data.frame(
-              SAMPLEID = paste0(controls, "_", (plate_num - fake_plates)),
-              SEQUENCINGRUN = run
+                samp_name = paste0(controls, "_", (plate_num - fake_plates))
             ) 
           }
           
@@ -93,8 +91,9 @@ reformat_meta_df <- function(meta_df,
             }
           }
         }
-        sample_ids[assay][[1]] <- sample_rows[assay][[1]]$SAMPLEID
+        sample_ids[assay][[1]] <- sample_rows[assay][[1]]$samp_name
         sample_count[assay][[1]] <- length(sample_ids[assay][[1]])
+        sample_rows[assay][[1]]$TMP <- NULL
     }
 
     
@@ -106,7 +105,7 @@ reformat_meta_df <- function(meta_df,
         assay_vec <- c(assay_vec, rep(assay, length.out = sample_count[assay][[1]]))
     }
 
-    sample_rows$ASSAY      <- assay_vec
+    sample_rows$assay      <- assay_vec
     row.names(sample_rows) <- NULL
     
     # Create a vector of characters based on plate height.
@@ -118,10 +117,10 @@ reformat_meta_df <- function(meta_df,
       char      <- LETTERS[which(LETTERS == char) + 1L]
     }
     
-    meta_df <- merge(sample_rows, meta_df, by = c("SAMPLEID", "SEQUENCINGRUN"), all.x = TRUE)
+    meta_df <- merge(sample_rows, meta_df, by = c("samp_name"), all.x = TRUE)
 
-    meta_df <- meta_df[match(paste(sample_rows$SAMPLEID, sample_rows$ASSAY), 
-                                    paste(meta_df$SAMPLEID, meta_df$ASSAY)), ]
+    meta_df <- meta_df[match(paste(sample_rows$samp_name, sample_rows$assay), 
+                                    paste(meta_df$samp_name, meta_df$assay)), ]
     rownames(meta_df) <- NULL
     
     
@@ -130,26 +129,26 @@ reformat_meta_df <- function(meta_df,
     
     #meta_df <- tmp_meta_df
     if (strategy == "UC") {
-        for (assay in assays) {
+        for (curr_assay in assays) {
             # Get vectors of the primers
-            fw_primers <- c(index_df[index_df$FWRV == "FW" & index_df$ASSAY == assay, "PRIMERNUM"][1:fw_count[assay][[1]]])
-            rv_primers <- c(index_df[index_df$FWRV == "RV" & index_df$ASSAY == assay, "PRIMERNUM"][1:rv_count[assay][[1]]])
+            fw_primers <- c(index_df[index_df$fw_rv == "fw" & index_df$assay == curr_assay, "primer_num"][1:fw_count[curr_assay][[1]]])
+            rv_primers <- c(index_df[index_df$fw_rv == "rv" & index_df$assay == curr_assay, "primer_num"][1:rv_count[curr_assay][[1]]])
           
-            if (length(fw_primers) < fw_count[assay][[1]]) {
+            if (length(fw_primers) < fw_count[curr_assay][[1]]) {
               stop(
                 paste0(
                   "You need at least ",
-                  fw_count[assay][[1]],
+                  fw_count[curr_assay][[1]],
                   " fw primers. Only found ",
                   length(fw_primers)
                 )
               )
             }
-            if (length(rv_primers) < rv_count[assay][[1]]) {
+            if (length(rv_primers) < rv_count[curr_assay][[1]]) {
               stop(
                 paste0(
                   "You need at least ",
-                  rv_count[assay][[1]],
+                  rv_count[curr_assay][[1]],
                   " rv primers. Only found ",
                   length(rv_primers)
                 )
@@ -172,7 +171,7 @@ reformat_meta_df <- function(meta_df,
     
             sample_i <- 0
             stop     <- FALSE
-            for (plate_num in (1:plate_count[assay][[1]])) {
+            for (plate_num in (1:plate_count[curr_assay][[1]])) {
                 # We refresh the `well_col` for a new plate
                 # It increases for each fw primer
                 well_col <- 0
@@ -180,16 +179,13 @@ reformat_meta_df <- function(meta_df,
                 for (fw in fw_primers[fw_left:fw_right]) {
                     well_row_index <- 0
                     well_col       <- well_col + 1
-                    
-                    
-                    #print(meta_df[meta_df$SAMPLEID == "ABv9_DC_3", ])
     
                     for (rv in rv_primers[rv_left:rv_right]) {
                         
                         sample_i <- sample_i + 1
     
                         # Stop if we run out of samples
-                        if (sample_i > sample_count[assay][[1]]) {
+                        if (sample_i > sample_count[curr_assay][[1]]) {
                             stop <- TRUE
                             break
                         }
@@ -204,24 +200,24 @@ reformat_meta_df <- function(meta_df,
     
                         # Add info to metadata
                         meta_row <- which(
-                            meta_df$SAMPLEID == sample_ids[assay][[1]][sample_i] &
-                            meta_df$ASSAY == assay
+                            meta_df$samp_name == sample_ids[curr_assay][[1]][sample_i] &
+                            meta_df$assay == curr_assay
                         )[1]
                         
-                        meta_df[meta_row, "FW_NO"]       <- fw
-                        meta_df[meta_row, "RV_NO"]       <- rv
-                        meta_df[meta_row, "FW_TAG"]      <- subset(
+                        meta_df[meta_row, "fw_no"]       <- fw
+                        meta_df[meta_row, "rv_no"]       <- rv
+                        meta_df[meta_row, "fw_tag"]      <- subset(
                             index_df,
-                            PRIMERNUM == fw & FWRV == "FW" & ASSAY == assay,
-                            select = TAGS
-                        )$TAGS
-                        meta_df[meta_row, "RV_TAG"]      <- subset(
+                            primer_num == fw & fw_rv == "fw" & assay == curr_assay,
+                            select = tags
+                        )$tags
+                        meta_df[meta_row, "rv_tag"]      <- subset(
                             index_df,
-                            PRIMERNUM == rv & FWRV == "RV" & ASSAY == assay,
-                            select = TAGS
-                        )$TAGS
-                        meta_df[meta_row, "PLATE"]       <- plate_num
-                        meta_df[meta_row, "WELL"]        <- well
+                            primer_num == rv & fw_rv == "rv" & assay == curr_assay,
+                            select = tags
+                        )$tags
+                        meta_df[meta_row, "plate"]       <- plate_num
+                        meta_df[meta_row, "well"]        <- well
                         
                         #if (fw == "52F" & rv == "63R") {print(meta_df[meta_row, ] )}
                         
@@ -238,7 +234,7 @@ reformat_meta_df <- function(meta_df,
                 }
     
                 # We still have rv primers left
-                if (rv_right < rv_count[assay][[1]]) {
+                if (rv_right < rv_count[curr_assay][[1]]) {
                     rv_left             <- rv_left + plate_height
                     rv_right            <- rv_right + plate_height
                     
@@ -264,31 +260,31 @@ reformat_meta_df <- function(meta_df,
             }
         }
     } else if (strategy == "UDI") {
-        for (assay in assays) {
+        for (curr_assay in assays) {
             # Get vectors of the primers
-            num_of_sams <- nrow(meta_df[meta_df$ASSAY == assay, ])
-            if (length(index_df[index_df$FWRV == "FW" & index_df$ASSAY == assay, "PRIMERNUM"]) < num_of_sams) {
+            num_of_sams <- nrow(meta_df[meta_df$assay == curr_assay, ])
+            if (length(index_df[index_df$fw_rv == "FW" & index_df$assay == curr_assay, "primer_num"]) < num_of_sams) {
                 stop(
                     paste0(
                         "You need at least ",
                         num_of_sams,
                         " fw primers. Only found ",
-                        length(index_df[index_df$FWRV == "FW" & index_df$ASSAY == assay, "PRIMERNUM"])
+                        length(index_df[index_df$fw_rv == "fw" & index_df$assay == curr_assay, "primer_num"])
                     )
                 )
             }
-            if (length(index_df[index_df$FWRV == "RV" & index_df$ASSAY == assay, "PRIMERNUM"]) < num_of_sams) {
+            if (length(index_df[index_df$fw_rv == "rv" & index_df$assay == curr_assay, "primer_num"]) < num_of_sams) {
                 stop(
                     paste0(
                         "You need at least ",
                         num_of_sams,
                         " rv primers. Only found ",
-                        length(index_df[index_df$FWRV == "RV" & index_df$ASSAY == assay, "PRIMERNUM"])
+                        length(index_df[index_df$fw_rv == "rv" & index_df$assay == curr_assay, "primer_num"])
                     )
                 )
             }
-            fw_primers <- c(index_df[index_df$FWRV == "FW" & index_df$ASSAY == assay, "PRIMERNUM"][1:num_of_sams])
-            rv_primers <- c(index_df[index_df$FWRV == "RV" & index_df$ASSAY == assay, "PRIMERNUM"][1:num_of_sams])
+            fw_primers <- c(index_df[index_df$fw_rv == "fw" & index_df$assay == curr_assay, "primer_num"][1:num_of_sams])
+            rv_primers <- c(index_df[index_df$fw_rv == "rv" & index_df$assay == curr_assay, "primer_num"][1:num_of_sams])
             
             
             well_row_index    <- 0
@@ -296,7 +292,7 @@ reformat_meta_df <- function(meta_df,
             plate_num         <- 1
             samp_num_in_plate <- 0
             samp_num_in_col   <- 0
-            for (i in (1:length(sample_ids[assay][[1]]))) {
+            for (i in (1:length(sample_ids[curr_assay][[1]]))) {
                 samp_num_in_plate <- samp_num_in_plate + 1
                 samp_num_in_col   <- samp_num_in_col + 1
                 # new col
@@ -313,12 +309,12 @@ reformat_meta_df <- function(meta_df,
                     well_col          <- 1
                 }
                 
-                sam <- sample_ids[assay][[1]][i]
+                sam <- sample_ids[curr_assay][[1]][i]
                 fw  <- fw_primers[i]
                 rv  <- rv_primers[i]
                 
                 # Stop if we run out of samples
-                if (i > sample_count[assay][[1]]) {
+                if (i > sample_count[curr_assay][[1]]) {
                     stop <- TRUE
                     break
                 }
@@ -333,24 +329,24 @@ reformat_meta_df <- function(meta_df,
                 
                 # Add info to metadata
                 meta_row <- which(
-                    meta_df$SAMPLEID == sam &
-                        meta_df$ASSAY == assay
+                    meta_df$samp_name == sam &
+                        meta_df$assay == curr_assay
                 )[1]
                 
-                meta_df[meta_row, "FW_NO"]       <- fw
-                meta_df[meta_row, "RV_NO"]       <- rv
-                meta_df[meta_row, "FW_TAG"]      <- subset(
+                meta_df[meta_row, "fw_no"]       <- fw
+                meta_df[meta_row, "rv_no"]       <- rv
+                meta_df[meta_row, "fw_tag"]      <- subset(
                     index_df,
-                    PRIMERNUM == fw & FWRV == "FW" & ASSAY == assay,
-                    select = TAGS
-                )$TAGS
-                meta_df[meta_row, "RV_TAG"]      <- subset(
+                    primer_num == fw & fw_rv == "fw" & assay == curr_assay,
+                    select = tags
+                )$tags
+                meta_df[meta_row, "rv_tag"]      <- subset(
                     index_df,
-                    PRIMERNUM == rv & FWRV == "RV" & ASSAY == assay,
-                    select = TAGS
-                )$TAGS
-                meta_df[meta_row, "PLATE"]       <- plate_num
-                meta_df[meta_row, "WELL"]        <- well
+                    primer_num == rv & fw_rv == "rv" & assay == curr_assay,
+                    select = tags
+                )$tags
+                meta_df[meta_row, "plate"]       <- plate_num
+                meta_df[meta_row, "well"]        <- well
             }
         }
     }
