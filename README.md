@@ -103,7 +103,7 @@ meta_to_plates(
 
 ### meta_to_plates() arguments
 
-- `metadata`: A path to an Excel file that contains your metadata. Make sure you have a 'samp_name' column with the unique identifiers for your samples. This is compatible with FAIRe formatted metadata.
+- `metadata`: A path to an Excel file that contains your metadata. Make sure you have a 'samp_name' column with the unique identifiers for your samples. This is compatible with FAIRe formatted metadata. This also accepts multiple Excel files if you provide a vector of paths.
 - `input_file`: A path to an Excel file in the format explained below in the 'meta_to_plates() input' section.
 - `output_file`: The path for your output Excel file.
 - `assays`: A vector of assays. These should match the assay names found in the index file.
