@@ -9,6 +9,7 @@ Code for manual qPCR setup and amplicon pooling for eDNA.
 - input/
   - index_Template.xlsx
     - qPCR_data/
+    - cpf_epf_tm_files/
 - output/
 - R/
   - run_concat_qPCR_data.R
@@ -52,7 +53,7 @@ These are the variables you may need to change in the `run_concat_qPCR_data.R` s
 
 ```{R}
 input_dir  <- "path/to/cp_epf_tm_files/"
-output_dir <- "path/to/output/"
+output_dir <- "path/to/qCPR_data/"
 assays     <- c("16S", "MiFish")
 ```
 
@@ -173,8 +174,8 @@ These are the variables you may need to change in the `run_plates_to_pooling.R` 
 
 ```{R}
 input_file   <- "path/to/output_df.xlsx"
-qpcr_dir     <- "path/to/qPCR_test_data"
-output_dir   <- "test_data/output/"
+qpcr_dir     <- "path/to/qPCR__data"
+output_dir   <- "path/to/output/"
 plate_width  <- 12
 plate_height <- 8
 assay        <- c("16S", "MiFish")

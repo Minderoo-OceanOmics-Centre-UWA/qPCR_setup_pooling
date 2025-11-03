@@ -10,8 +10,8 @@ library(stringr)
 # Variables
 ##########################################################
 
-input_dir   <- "input/qPCR_data/"
-output_dir  <- "output/"
+input_dir   <- "input/cp_epf_tm_files/"
+output_dir  <- "input/qPCR_data/"
 assays      <- c("16S", "MiFishU", "MiFishE2", "COILeray")
 start_plate <- 1
 
