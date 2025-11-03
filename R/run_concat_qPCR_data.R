@@ -10,9 +10,9 @@ library(stringr)
 # Variables
 ##########################################################
 
-input_dir   <- "test_data/input/cp_epf_tm_files/"
-output_dir  <- "test_data/output/"
-assays      <- c("16S", "MiFish")
+input_dir   <- "input/qPCR_data/"
+output_dir  <- "output/"
+assays      <- c("16S", "MiFishU", "MiFishE2", "COILeray")
 start_plate <- 1
 
 

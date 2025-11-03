@@ -16,12 +16,12 @@ suppressMessages(library("tools"))
 # Variables
 ##########################################################
 
-input_file   <- "test_data/output/output_df.xlsx"
-qpcr_dir     <- "test_data/input/qPCR_test_data/"
-output_dir   <- "test_data/output/"
+input_file   <- "output/output_df.xlsx"
+qpcr_dir     <- "input/qPCR_data/"
+output_dir   <- "output/"
 plate_width  <- 12
 plate_height <- 8
-assays       <- c("16S", "MiFish")
+assays       <- c("16S", "MiFishU", "MiFishE2", "COILeray")
 suffix       <- ""
 
 

@@ -3,6 +3,30 @@
 
 Code for manual qPCR setup and amplicon pooling for eDNA.
 
+## Directory structure
+
+```
+- input/
+  - index_Template.xlsx
+    - qPCR_data/
+- output/
+- R/
+  - run_concat_qPCR_data.R
+  - run_meta_to_plates.R
+  - run_plates_to_pooling.R
+  - (other scripts)
+- test_data/
+  - input/
+    - qPCR_test_data/
+      - (qPCR QC data)
+    - AB_V12_V9_metadata.xlsx
+    - R_input_Template.xlsx
+  - output/
+    - (output files created by test data)
+```
+
+The test_data folder has some test data that you can mess around with. The input folder is similar, but empty except for 'index_Template.xlsx'. If you want, you can put your input data in this input folder. The output folder is an empty folder that you use to store your output file. Though a different output folder can also be used. The R folder has the R scripts. The important scripts are 'run_concat_qPCR_data.R', 'run_meta_to_plates.R', and 'run_plates_to_pooling.R'. These scripts are explained in more details below.
+
 ## Setup
 
 Install dependencies. This can be done in R studio with:
@@ -27,8 +51,8 @@ There is a template file in the R folder called `run_meta_to_plates.R` that can 
 These are the variables you may need to change in the `run_concat_qPCR_data.R` script:
 
 ```{R}
-input_dir  <- "test_data/input/cp_epf_tm_files/"
-output_dir <- "test_data/output/"
+input_dir  <- "path/to/cp_epf_tm_files/"
+output_dir <- "path/to/output/"
 assays     <- c("16S", "MiFish")
 ```
 
@@ -56,7 +80,8 @@ output_file <- "path/to/output.xlsx"
 assays      <- c("16S", "MiFish")
 
 meta_to_plates(
-    input_file,
+    metadata,
+    index_file,
     output_file,
     assays
 )
@@ -147,8 +172,8 @@ The output Excel file will have four sheets; `plates`, `big_plates`, `metadata`,
 These are the variables you may need to change in the `run_plates_to_pooling.R` script:
 
 ```{R}
-input_file   <- "test_data/output/output_df.xlsx"
-qpcr_dir     <- "test_data/input/qPCR_test_data"
+input_file   <- "path/to/output_df.xlsx"
+qpcr_dir     <- "path/to/qPCR_test_data"
 output_dir   <- "test_data/output/"
 plate_width  <- 12
 plate_height <- 8
