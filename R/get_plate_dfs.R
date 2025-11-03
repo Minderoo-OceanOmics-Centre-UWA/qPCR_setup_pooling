@@ -14,12 +14,12 @@ get_plate_dfs <- function(first_fw,
                           plate_width,
                           meta_df) {
 
-    sample_ids <- meta_df$SAMPLEID[meta_df$ASSAY == assay]
+    sample_ids <- meta_df$samp_name[meta_df$assay == assay]
     sample_count <- length(sample_ids)
 
     # Get vectors of the primers
-    fw_primers <- c(index_df[index_df$FWRV == "FW" & index_df$ASSAY == assay, "PRIMERNUM"][1:fw_count])
-    rv_primers <- c(index_df[index_df$FWRV == "RV" & index_df$ASSAY == assay, "PRIMERNUM"][1:rv_count])
+    fw_primers <- c(index_df[index_df$fw_rv == "fw" & index_df$assay == assay, "primer_num"][1:fw_count])
+    rv_primers <- c(index_df[index_df$fw_rv == "rv" & index_df$assay == assay, "primer_num"][1:rv_count])
 
     plate     <- data.frame(
         matrix(
