@@ -50,27 +50,15 @@ This is the minimum arguments required to run the meta_to_plates() function:
 
 ```{R}
 source("R/meta_to_plates.R")
-input_file  <- "path/to/input.xlsx"
+metadata    <- "path/to/metadata.xlsx"
+index_file  <- "path/to/indexes.xlsx"
 output_file <- "path/to/output.xlsx"
 assays      <- c("16S", "MiFish")
-run         <- "run_1"
-
-plates_to_skip <- list(
-  "16S" = 2,
-  "MiFish" = 0
-)
-samples_to_skip <- list(
-  "16S" = 10,
-  "MiFish" = 0
-)
 
 meta_to_plates(
     input_file,
     output_file,
-    assays,
-    run,
-    skip_plates = plates_to_skip,
-    skip_samples = samples_to_skip
+    assays
 )
 ```
 
@@ -79,7 +67,8 @@ Note: This assumes the R folder with all the scripts is in your current working 
 This is all the arguments that can be used when running the meta_to_plates() function:
 
 ```{R}
-input_file      <- "path/to/input.xlsx"
+metadata        <- "path/to/metadata.xlsx"
+index_file      <- "path/to/indexes.xlsx"
 output_file     <- "path/to/output.xlsx"
 assays          <- c("16S", "MiFish")
 run             <- "run_1"
@@ -95,6 +84,7 @@ skip_samples    <- list(
   "16S" = 0,
   "MiFish" = 0
 )
+strategy        <- "UC"
 
 meta_to_plates(
     input_file,
@@ -105,16 +95,19 @@ meta_to_plates(
     plate_height,
     controls,
     control_pattern,
-    skip_samples
+    skip_plates,
+    skip_samples,
+    strategy
 )
 ```
 
 ### meta_to_plates() arguments
 
+- `metadata`: A path to an Excel file that contains your metadata. Make sure you have a 'samp_name' column with the unique identifiers for your samples. This is compatible with FAIRe formatted metadata.
 - `input_file`: A path to an Excel file in the format explained below in the 'meta_to_plates() input' section.
 - `output_file`: The path for your output Excel file.
-- `assays`: A vector of assays. These should match the assay names found in the input file.
-- `run`: The name of the run. This should match the sequencing run name found in the input file.
+- `assays`: A vector of assays. These should match the assay names found in the index file.
+- `run`: The name of the run. This should match the 'sequencing_run' name found in the metadata. Samples will only be used if they match the 'run'. This feature won't be used if the metadata doesn't have a 'sequencing_run' column.
 - `plate_width`: The number of columns per plate. Default = 12.
 - `plate_height`: The number of rows per plate. Default = 8. Max allowed = 13.
 - `controls`: A vector of control samples that will be added at the end of each plate. Default = c("NTC", "ITC").
@@ -128,11 +121,8 @@ meta_to_plates(
 An example input file can be viewed at `test_data/AB_V12_V9_metadata.xlsx`
 There is also a template you can follow at `test_data/R_input_Template.xlsx`
 
-The input Excel file should contain a metadata sheet and one index sheet for each assay.
+The index Excel file should contain one index sheet for each assay.
 
-- `metadata`: Should have the columns `sample_id` and `sequencing_run`.
-  - `sample_id`: This column will be used to name your samples and to flag samples as control samples.
-  - `sequencing_run`: This column will be used to use only samples with the same run as the `run argument`.
 - `${assay}_index`: Replace `${assay}` with the name of your assay. Should have the columns `primer_num`, `tags`, and `fw_rv`.
   - `primer_num`: Each value here should be unique. These values will be used as column/row names for your plates.
   - `tags`: The sequence used to for demultiplexing samples.
@@ -148,6 +138,7 @@ The output Excel file will have four sheets; `plates`, `big_plates`, `metadata`,
 - `big_plates`: Will be bigger versions of the plates with 3 replicates and a pool replicate added to each sample.
 - `metadata`: Your samples will be duplicated for each assay. The metadata will now contain demultiplex, plate, and well information.
 - `position_df`: This will have your samples duplicated for each replicate in the big plates. This sheet is needed for the `run_plates_to_pooling()` script.
+- `samplesheet_${assay}`
 
 ## plates_to_pooling() function
 
@@ -161,6 +152,8 @@ qpcr_dir     <- "test_data/input/qPCR_test_data"
 output_dir   <- "test_data/output/"
 plate_width  <- 12
 plate_height <- 8
+assay        <- c("16S", "MiFish")
+suffix       <- ""
 ```
 
 ### run_plates_to_pooling variables
@@ -170,13 +163,15 @@ plate_height <- 8
 - `output_dir`: Directory where you would like all output files. The output files are explained in more detail below.
 - `plate_width`: The number of columns per plate. Default = 12. This should be the same value you used in meta_to_plates().
 - `plate_height`: The number of rows per plate. Default = 8. Max allowed = 13. This should be the same value you used in meta_to_plates().
+- `assay`: The assays that you're working with.
+- `suffix`: What suffix would you like for your file names.
 
 ### run_plates_to_pooling input
 
 - `input_file`: This is the output file from the meta_to_plates() function. An example can be viewed at `test_data/results.xlsx`
 - `qpcr_dir`: An example of the qpcr directory can be viewed at `test_data/qPCR_test_data`
   - Each file in the qPCR directory should have names that end in `_$assay_$plate.txt`. An example name would be `20230901_Extraction_16S_Plate1.txt`.
-  - These txt files should be tab seperated files with the columns `Experiment_name`, `Position`, `Sample`, `EPF`, `Cp`, `Tm1`, `Tm2`.
+  - These txt files should be tab separated files with the columns `Experiment_name`, `Position`, `Sample`, `EPF`, `Cp`, `Tm1`, `Tm2`.
 
 ### run_plates_to_pooling discarding samples
 
