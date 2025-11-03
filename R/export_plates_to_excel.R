@@ -13,7 +13,7 @@ export_plates_to_excel <- function(assays,
     # Add a sheet to the workbook
     addWorksheet(wb, "plates")
     addWorksheet(wb, "big_plates")
-    addWorksheet(wb, "metadata")
+    addWorksheet(wb, "sampleMetadata")
     addWorksheet(wb, "position_df")
 
     # We will loop through the assays and plate numbers and use those values as
@@ -113,15 +113,8 @@ export_plates_to_excel <- function(assays,
     }
 
     # We can't forget to add the metadata and position df
-    colnames(meta_df)[colnames(meta_df) == 'SAMPLEID'] <- 'sample'
-    colnames(meta_df)[colnames(meta_df) == 'SEQUENCINGRUN'] <- 'sequencing_run'
-    colnames(meta_df)[colnames(meta_df) == 'ASSAY'] <- 'assay'
-    colnames(meta_df)[colnames(meta_df) == 'FW_NO'] <- 'fw_no'
-    colnames(meta_df)[colnames(meta_df) == 'RV_NO'] <- 'rv_no'
-    colnames(meta_df)[colnames(meta_df) == 'FW_TAG'] <- 'fw_index'
-    colnames(meta_df)[colnames(meta_df) == 'RV_TAG'] <- 'rv_index'
-    colnames(meta_df)[colnames(meta_df) == 'PLATE'] <- 'plate'
-    colnames(meta_df)[colnames(meta_df) == 'WELL'] <- 'well'
+    colnames(meta_df)[colnames(meta_df) == 'fw_tag'] <- 'fw_index'
+    colnames(meta_df)[colnames(meta_df) == 'rv_tag'] <- 'rv_index'
   
     for (i in 1:length(colnames(meta_df))) {
       colnames(meta_df)[i] = tolower(colnames(meta_df)[i])
@@ -130,18 +123,18 @@ export_plates_to_excel <- function(assays,
     meta_df$fastq_2 <- NA
     writeData(
         wb,
-        sheet = "metadata",
+        sheet = "sampleMetadata",
         meta_df,
         startRow = 1,
         startCol = 1
     )
     
     for (assay in assays) {
-      addWorksheet(wb, paste0("metadata_", assay))
+      addWorksheet(wb, paste0("samplesheet_", assay))
       
       writeData(
         wb,
-        sheet = paste0("metadata_", assay),
+        sheet = paste0("samplesheet_", assay),
         meta_df[meta_df$assay == assay, ],
         startRow = 1,
         startCol = 1
@@ -150,7 +143,7 @@ export_plates_to_excel <- function(assays,
 
     if ("project" %in% colnames(position_df)) {
         colnames(position_df) <- c(
-            "sample",
+            "samp_name",
             "assay",
             "project",
             "replicate",
@@ -163,7 +156,7 @@ export_plates_to_excel <- function(assays,
         )
     } else {
         colnames(position_df) <- c(
-            "sample",
+            "samp_name",
             "assay",
             "replicate",
             "pos",
