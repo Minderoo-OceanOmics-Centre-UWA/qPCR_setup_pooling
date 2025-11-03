@@ -2,9 +2,9 @@ import_index_df <- function(excel_file, assays) {
     excel_sheets <- excel_sheets(excel_file)
 
     index_df     <- data.frame(
-        PRIMERNUM = character(),
-        TAGS = character(),
-        FWRV = character(),
+        primer_num = character(),
+        tags = character(),
+        fw_rv = character(),
         stringsAsFactors = FALSE
     )
 
@@ -40,15 +40,11 @@ import_index_df <- function(excel_file, assays) {
         # Import index sheet
         curr_index_df <- read_excel(excel_file, sheet = curr_index_sheet) %>%
             as.data.frame()
-        names(curr_index_df) <- gsub(" ", "", names(curr_index_df)) %>% {
-                gsub("_", "", .)
-            } %>%
-            toupper()
 
         curr_index_df <- curr_index_df %>% dplyr::select(-contains("..."))
         
         # Validate index sheet columns
-        if (!("PRIMERNUM" %in% colnames(curr_index_df))) {
+        if (!("primer_num" %in% colnames(curr_index_df))) {
             stop(
                 paste0(
                     "Sheet '",
@@ -57,7 +53,7 @@ import_index_df <- function(excel_file, assays) {
                 )
             )
         }
-        if (!("TAGS" %in% colnames(curr_index_df))) {
+        if (!("tags" %in% colnames(curr_index_df))) {
             stop(
                 paste0(
                     "Sheet '",
@@ -66,7 +62,7 @@ import_index_df <- function(excel_file, assays) {
                 )
             )
         }
-        if (!("FWRV" %in% colnames(curr_index_df))) {
+        if (!("fw_rv" %in% colnames(curr_index_df))) {
             stop(
                 paste0(
                     "Sheet '",
@@ -75,12 +71,12 @@ import_index_df <- function(excel_file, assays) {
                 )
             )
         }
-        if (length(curr_index_df$TAGS) !=
-        length(unique(curr_index_df$TAGS))) {
+        if (length(curr_index_df$tags) !=
+        length(unique(curr_index_df$tags))) {
             duplicates <- curr_index_df[
-                duplicated(curr_index_df$TAGS) |
-                duplicated(curr_index_df$TAGS, fromLast = TRUE),
-                "TAGS"
+                duplicated(curr_index_df$tags) |
+                duplicated(curr_index_df$tags, fromLast = TRUE),
+                "tags"
             ]
             stop(
                 paste0(
@@ -91,10 +87,9 @@ import_index_df <- function(excel_file, assays) {
         }
 
         # Make sure fw_rv column only has 'fw' or 'rv' values
-        curr_index_df$FWRV <- toupper(curr_index_df$FWRV)
-        unique_fw_rv       <- unique(curr_index_df$FWRV)
+        unique_fw_rv       <- unique(curr_index_df$fw_rv)
         for (i in unique_fw_rv) {
-            if (i != "FW" && i != "RV") {
+            if (i != "fw" && i != "rv") {
                 stop(
                     paste0(
                         "You can't have ",
@@ -105,7 +100,7 @@ import_index_df <- function(excel_file, assays) {
             }
         }
 
-        curr_index_df$ASSAY <- assay
+        curr_index_df$assay <- assay
         index_df            <- rbind(index_df, curr_index_df)
     }
 
