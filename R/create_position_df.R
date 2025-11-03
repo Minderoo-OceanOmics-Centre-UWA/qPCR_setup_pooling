@@ -7,14 +7,14 @@ create_position_df <- function(meta_df,
 
     # Create a position_df to hold information that can link
     # the samples to the big plate positions
-    if ("PROJECT" %in% colnames(meta_df)) {
-        position_df                           <- meta_df[, c("SAMPLEID", "ASSAY", "PROJECT")]
-        colnames(position_df)[colnames(position_df) == "PROJECT"] <- "project"
+    if ("project" %in% colnames(meta_df)) {
+        position_df                           <- meta_df[, c("samp_name", "assay", "project")]
+        colnames(position_df)[colnames(position_df) == "project"] <- "project"
     } else {
-        position_df                           <- meta_df[, c("SAMPLEID", "ASSAY")]
+        position_df                           <- meta_df[, c("samp_name", "assay")]
     }
-    colnames(position_df)[colnames(position_df) == "SAMPLEID"] <- "sample_id"
-    colnames(position_df)[colnames(position_df) == "ASSAY"] <- "assay"
+    colnames(position_df)[colnames(position_df) == "samp_name"] <- "sample_id"
+    colnames(position_df)[colnames(position_df) == "assay"] <- "assay"
     
     position_df["Pos"]                    <- NULL
     position_df["sample_replicate"]       <- NULL
@@ -48,7 +48,7 @@ create_position_df <- function(meta_df,
     for (assay in assays) {
         # Track sample. Starts again for each assay.
       
-        sample_names <- unique(meta_df$SAMPLEID[meta_df$ASSAY == assay])
+        sample_names <- unique(meta_df$samp_name[meta_df$assay == assay])
         sample_count <- length(sample_names)
         sample_i <- 1
         for (plate_num in (1:plate_count[assay][[1]])) {
