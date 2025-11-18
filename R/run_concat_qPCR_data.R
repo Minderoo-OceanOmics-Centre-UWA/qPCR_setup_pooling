@@ -28,9 +28,9 @@ for (assay in assays) {
     curr_plate <- paste0("Plate", plate_num)
     print(paste0(assay, ": ", curr_plate))
     
-    cp_file  <- Sys.glob(paste0(input_dir, "*", assay, "_", curr_plate, "*Cp.txt"))
-    epf_file <- Sys.glob(paste0(input_dir, "*", assay, "_", curr_plate, "*EPF.txt"))
-    tm_file  <- Sys.glob(paste0(input_dir, "*", assay, "_", curr_plate, "*Tm.txt"))
+    cp_file  <- Sys.glob(paste0(input_dir, "*", assay, "_", curr_plate, "_Cp.txt"))
+    epf_file <- Sys.glob(paste0(input_dir, "*", assay, "_", curr_plate, "_EPF.txt"))
+    tm_file  <- Sys.glob(paste0(input_dir, "*", assay, "_", curr_plate, "_Tm.txt"))
     
     # Import cp and keep only Position, and Cp
     print(paste0("Importing: ", cp_file))
@@ -77,17 +77,32 @@ for (assay in assays) {
       stop(paste0("tm data appears to be empty. Check that this path is correct and the file isn't empty ", tm_file))
     }
     tm$Position <- tm$Pos
-    tm          <- tm[, c("Position", "Tm1", "Tm2")]
+    if ("Tm2" %in% colnames(tm)) {
+      tm          <- tm[, c("Position", "Tm1", "Tm2")]
     
-    # Merge all data, then export results
-    output          <- merge(merge(epf, cp, by = "Position"), tm, by = "Position")
-    #output_filename <- tail(strsplit(cp_file, "/")[[1]], n = 1)
-    #output_filename <- gsub("Cp", "output", output_filename)
-    output_filename <- paste0(exprmnt, "_", assay, "_", curr_plate, ".txt")
-    print(paste0("Exporting data to: ", output_dir, output_filename))
+      # Merge all data, then export results
+      output          <- merge(merge(epf, cp, by = "Position"), tm, by = "Position")
+      #output_filename <- tail(strsplit(cp_file, "/")[[1]], n = 1)
+      #output_filename <- gsub("Cp", "output", output_filename)
+      output_filename <- paste0(exprmnt, "_", assay, "_", curr_plate, ".txt")
+      print(paste0("Exporting data to: ", output_dir, output_filename))
     
-    #Experiment_name	Position	Sample	EPF	Cp	Tm1	Tm2
-    output <- output[, c("Experiment_name", "Position", "Sample", "EPF", "Cp", "Tm1", "Tm2")]
-    write.table(output, paste0(output_dir, output_filename))
+      #Experiment_name	Position	Sample	EPF	Cp	Tm1	Tm2
+      output <- output[, c("Experiment_name", "Position", "Sample", "EPF", "Cp", "Tm1", "Tm2")]
+      write.table(output, paste0(output_dir, output_filename))
+    } else {
+      tm          <- tm[, c("Position", "Tm1")]
+    
+      # Merge all data, then export results
+      output          <- merge(merge(epf, cp, by = "Position"), tm, by = "Position")
+      #output_filename <- tail(strsplit(cp_file, "/")[[1]], n = 1)
+      #output_filename <- gsub("Cp", "output", output_filename)
+      output_filename <- paste0(exprmnt, "_", assay, "_", curr_plate, ".txt")
+      print(paste0("Exporting data to: ", output_dir, output_filename))
+    
+      #Experiment_name	Position	Sample	EPF	Cp	Tm1
+      output <- output[, c("Experiment_name", "Position", "Sample", "EPF", "Cp", "Tm1")]
+      write.table(output, paste0(output_dir, output_filename))
+    }
   }
 }
