@@ -964,10 +964,10 @@ write.csv(row.names = FALSE, rep_failed, paste0(output_dir, "rxns_checked", suff
 # summary of number of reps to be discarded per sample 
 rep_failed_summary <- rep_failed %>%   
   filter(replicate != "pool") %>%   
-  dplyr::group_by(sample, assay) %>%   
+  dplyr::group_by(SAMP_NAME, assay) %>%   
   dplyr::summarise(count_discard = sum(discard == "DISCARD")) %>%   
   ungroup() %>%   
-  arrange(sample_order(sample)) 
+  arrange(sample_order(SAMP_NAME)) 
 # identify the total number of samples per assay 
 # with replicates to be discarded print_failed_rep_message(rep_failed_summary, assays) 
 # print the failed reps (reps where the epf < 2 and the Cp >40) 
@@ -1157,6 +1157,7 @@ for (assay in assays) {
   
   write_csv(meta_df, paste0(output_dir, "/samplesheet_", assay, suffix, ".csv"))
 }
+
 
 
 
