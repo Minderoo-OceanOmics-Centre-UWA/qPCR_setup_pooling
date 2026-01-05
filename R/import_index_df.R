@@ -100,8 +100,9 @@ import_index_df <- function(excel_file, assays) {
             }
         }
 
-        curr_index_df$assay <- assay
-        index_df            <- rbind(index_df, curr_index_df)
+        curr_index_df$assay      <- assay
+        curr_index_df$primer_seq <- NULL
+        index_df                 <- rbind(index_df, curr_index_df)
     }
 
     return(index_df)
