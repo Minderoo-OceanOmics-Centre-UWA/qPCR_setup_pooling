@@ -987,7 +987,7 @@ print(rep_failed[(rep_failed$tm1_outside_sd == TRUE | rep_failed$epf_2_to_5 == T
 #identify samples to be completely removed from pool (DISCARD >= 2)
 discarded_samples <- rep_failed_summary %>%
     filter(count_discard >= 2) %>%
-    arrange(sample)
+    arrange(SAMP_NAME)
 
 # export table for manual removal of failed replicates from 384-well plates
 ## AB - can this please only include samples where 1 replicate needs to be discarded.
@@ -1157,6 +1157,7 @@ for (assay in assays) {
   
   write_csv(meta_df, paste0(output_dir, "/samplesheet_", assay, suffix, ".csv"))
 }
+
 
 
 
