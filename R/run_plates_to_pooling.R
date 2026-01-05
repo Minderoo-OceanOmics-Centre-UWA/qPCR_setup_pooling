@@ -1153,10 +1153,11 @@ for (assay in assays) {
   meta_df$discarded <- FALSE
   curr_disc_sams    <- discarded_samples[discarded_samples$assay == assay, ]
   
-  meta_df$discarded <- ifelse(meta_df$sample %in% curr_disc_sams$sample, TRUE, meta_df$discarded)
+  meta_df$discarded <- ifelse(meta_df$samp_name %in% curr_disc_sams$SAMP_NAME, TRUE, meta_df$discarded)
   
   write_csv(meta_df, paste0(output_dir, "/samplesheet_", assay, suffix, ".csv"))
 }
+
 
 
 
