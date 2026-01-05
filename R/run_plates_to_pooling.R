@@ -848,7 +848,7 @@ rep_failed <- lc480_data_sample %>%
       TRUE ~ "KEEP"
     )
   ) %>%
-  arrange(sample_order(sample))
+  arrange(sample_order(SAMP_NAME))
 
 # Flag samples with epf between 2 and 5
 rep_failed <- rep_failed %>%
@@ -858,7 +858,7 @@ rep_failed <- rep_failed %>%
       TRUE ~ FALSE
     )
   ) %>%
-  arrange(sample_order(sample))
+  arrange(sample_order(SAMP_NAME))
 
 # Flag samples with tm1 outside of standard deviation
 rep_failed$tm1_sd         <- NA
@@ -1157,4 +1157,5 @@ for (assay in assays) {
   
   write_csv(meta_df, paste0(output_dir, "/samplesheet_", assay, suffix, ".csv"))
 }
+
 
