@@ -272,7 +272,7 @@ export_biomek_pooling_workbook <- function(assays,
                 })
                 
                 minipool_calc_vols[curr_key][[1]] <- minipool_calc_vols[curr_key][[1]] %>%
-                    mutate(DestinationWell = ifelse(grepl("^ITC_", SAMPLE), paste0("C", assay_num), DestinationWell))
+                    mutate(DestinationWell = ifelse(grepl("^ITC_", SAMP_NAME), paste0("C", assay_num), DestinationWell))
                 
                 # Set theme for plots
                 theme_set(theme_bw() +
@@ -502,11 +502,11 @@ export_biomek_pooling_workbook_project_ver <- function(assays,
                         })
                         
                         minipool_calc_vols[curr_key][[1]] <- minipool_calc_vols[curr_key][[1]] %>%
-                            #mutate(DestinationWell = ifelse(grepl("^ITC_", SAMPLE), paste0("C", biomek_deck_pos), DestinationWell))
-                            mutate(DestinationWell = ifelse(grepl("^ITC_", SAMPLE), paste0("C", assay_num), DestinationWell))
+                            #mutate(DestinationWell = ifelse(grepl("^ITC_", SAMP_NAME), paste0("C", biomek_deck_pos), DestinationWell))
+                            mutate(DestinationWell = ifelse(grepl("^ITC_", SAMP_NAME), paste0("C", assay_num), DestinationWell))
                         minipool_calc_vols[curr_key][[1]] <- minipool_calc_vols[curr_key][[1]] %>%
-                            #mutate(DestinationWell = ifelse(grepl("^ITC_", SAMPLE), paste0("C", biomek_deck_pos), DestinationWell))
-                            mutate(DestinationWell = ifelse(grepl("^NTC_", SAMPLE), paste0("D", assay_num), DestinationWell))
+                            #mutate(DestinationWell = ifelse(grepl("^ITC_", SAMP_NAME), paste0("C", biomek_deck_pos), DestinationWell))
+                            mutate(DestinationWell = ifelse(grepl("^NTC_", SAMP_NAME), paste0("D", assay_num), DestinationWell))
                         
                         # Set theme for plots
                         theme_set(theme_bw() +
@@ -882,7 +882,7 @@ for (curr_assay in assays) {
           TRUE ~ FALSE
         )
       ) %>%
-      arrange(sample_order(sample))
+      arrange(sample_order(SAMP_NAME))
   }
 }
 
@@ -894,10 +894,10 @@ for (curr_assay in assays) {
 # summary of number of reps to be discarded per sample
 rep_failed_summary <- rep_failed %>%
   filter(replicate != "pool") %>%
-  dplyr::group_by(sample, assay) %>%
+  dplyr::group_by(SAMP_NAME, assay) %>%
   dplyr::summarise(count_discard = sum(discard == "DISCARD")) %>%
   ungroup() %>%
-  arrange(sample_order(sample))
+  arrange(sample_order(SAMP_NAME))
 
 # identify the total number of samples per assay
 # with replicates to be discarded
@@ -1000,13 +1000,13 @@ if (nrow(reps_to_discard) != 0) {
     reps_to_discard <- reps_to_discard %>%
         arrange(plate_number, sample_order(pos))
         
-    reps_to_discard$sample <- substr(reps_to_discard$sample_replicate, 1, nchar(reps_to_discard$sample_replicate)-2)
+    reps_to_discard$samp_name <- substr(reps_to_discard$sample_replicate, 1, nchar(reps_to_discard$sample_replicate)-2)
     
     # Keep only rows where the sample is not duplicated
-    duplicated_rows <- duplicated(reps_to_discard[c("assay", "sample")]) | duplicated(reps_to_discard[c("assay", "sample")], fromLast = TRUE)
+    duplicated_rows <- duplicated(reps_to_discard[c("assay", "samp_name")]) | duplicated(reps_to_discard[c("assay", "samp_name")], fromLast = TRUE)
     reps_to_discard <- subset(reps_to_discard, !duplicated_rows)
 } else {
-    reps_to_discard <- cbind(reps_to_discard, sample)
+    reps_to_discard <- cbind(reps_to_discard, samp_name)
 }
 
 write.csv(reps_to_discard, file = paste0(output_dir, "/reps_to_discard", suffix, ".csv"), row.names=FALSE, quote=FALSE)
@@ -1017,7 +1017,7 @@ write.csv(reps_to_discard, file = paste0(output_dir, "/reps_to_discard", suffix,
 ##########################################################
 
 clean_lc480_data <- rep_failed %>%
-  dplyr::group_by(assay, sample) %>%
+  dplyr::group_by(assay, SAMP_NAME) %>%
   filter(discard=="KEEP")
 
 
@@ -1054,7 +1054,7 @@ print(clean_plate_plot_epf)
 # (at this point is still includes failed replicates -
 # this is ok, as they are filtered later)
 epf_cal <- rep_failed %>%
-  dplyr::group_by(assay, sample, sample_type) %>%
+  dplyr::group_by(assay, SAMP_NAME, sample_type) %>%
   dplyr::summarise(
     median = median(epf, na.rm = TRUE),
     mean = mean(epf, na.rm = TRUE),
@@ -1063,7 +1063,7 @@ epf_cal <- rep_failed %>%
     max = max(epf),
     diff_epf = max(epf) - min(epf),
     number_valid_reps = (sum(discard == "KEEP") >= 2)) %>%
-  arrange(sample_order(sample)) %>%
+  arrange(sample_order(SAMP_NAME)) %>%
   ungroup()
 
 # assign calculated mean to respective sample-pool
@@ -1074,7 +1074,7 @@ epf_cal_mean <- epf_cal %>%
     sample_type == "control" |
       (sample_type == "sample" & number_valid_reps == TRUE)
   ) %>%
-  mutate(sample_replicate = paste0(sample, "-pool")) %>%
+  mutate(sample_replicate = paste0(SAMP_NAME, "-pool")) %>%
   mutate(
     assay_sample_replicate = paste0(
       assay, ".", sample_replicate
@@ -1105,7 +1105,7 @@ if ("project" %in% colnames(position_df_pool)) {
     minipool_overview <-   position_df_pool %>%
       group_by(assay, plate_number, sample_type, project) %>%
       dplyr::summarise(
-        count_samples = n_distinct(SAMPLE),
+        count_samples = n_distinct(SAMP_NAME),
         min =  min(mean),
         max = max(mean),
         diff_mean = max(mean) - min(mean),
@@ -1115,7 +1115,7 @@ if ("project" %in% colnames(position_df_pool)) {
     minipool_overview <-   position_df_pool %>%
         group_by(assay, plate_number, sample_type) %>%
         dplyr::summarise(
-            count_samples = n_distinct(SAMPLE),
+            count_samples = n_distinct(SAMP_NAME),
             min =  min(mean),
             max = max(mean),
             diff_mean = max(mean) - min(mean),
@@ -1138,7 +1138,7 @@ minipool_vols_summary <- minipool_vols_df %>%
   group_by(assay, plate_number, sample_type, DestinationWell) %>%
   dplyr::summarise(
     total_vol_ul = sum(vol_ul),
-    count_samples = n_distinct(SAMPLE)) %>%
+    count_samples = n_distinct(SAMP_NAME)) %>%
   ungroup() %>%
   mutate(assay.plate_number.sample_type = paste(assay, plate_number, sample_type, sep = ".") )
 
@@ -1157,6 +1157,7 @@ for (assay in assays) {
   
   write_csv(meta_df, paste0(output_dir, "/samplesheet_", assay, suffix, ".csv"))
 }
+
 
 
 
