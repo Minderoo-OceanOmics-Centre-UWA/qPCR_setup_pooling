@@ -698,7 +698,7 @@ import_position_df <- function(excel_file) {
 import_samplesheet_df <- function(excel_file, assay) {
   excel_sheets   <- excel_sheets(excel_file)
   metadata_sheet <- grep(
-    glob2rx(paste0("metadata_", assay)),
+    glob2rx(paste0("samplesheet_", assay)),
     excel_sheets,
     ignore.case = TRUE,
     value = TRUE
@@ -706,14 +706,14 @@ import_samplesheet_df <- function(excel_file, assay) {
   
   # Validate number of sheets called 'position_df'
   if (length(metadata_sheet) == 0) {
-    stop(paste0("No sheets found named 'metadata_'", assay, "'"))
+    stop(paste0("No sheets found named 'samplesheet_'", assay, "'"))
   }
   if (length(metadata_sheet) > 1) {
-    stop(paste0("Multiple sheets found named 'metadata_'", assay, "'"))
+    stop(paste0("Multiple sheets found named 'samplesheet_'", assay, "'"))
   }
   
   # Import df
-  metadata_df   <- read_excel(excel_file, sheet = paste0("metadata_", assay)) %>%
+  metadata_df   <- read_excel(excel_file, sheet = paste0("samplesheet_", assay)) %>%
     as.data.frame()
   
   return(metadata_df)
@@ -1157,5 +1157,6 @@ for (assay in assays) {
   
   write_csv(meta_df, paste0(output_dir, "/samplesheet_", assay, suffix, ".csv"))
 }
+
 
 
