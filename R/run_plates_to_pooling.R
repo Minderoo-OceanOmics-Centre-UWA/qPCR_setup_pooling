@@ -270,9 +270,12 @@ export_biomek_pooling_workbook <- function(assays,
                         data.frame() %>%
                         list()
                 })
-                
+
                 minipool_calc_vols[curr_key][[1]] <- minipool_calc_vols[curr_key][[1]] %>%
                     mutate(DestinationWell = ifelse(grepl("^ITC_", SAMP_NAME), paste0("C", assay_num), DestinationWell))
+                minipool_calc_vols[curr_key][[1]] <- minipool_calc_vols[curr_key][[1]] %>%
+                    mutate(DestinationWell = ifelse(grepl("^NTC_", SAMP_NAME), paste0("D", assay_num), DestinationWell))
+                        
                 
                 # Set theme for plots
                 theme_set(theme_bw() +
@@ -1157,6 +1160,7 @@ for (assay in assays) {
   
   write_csv(meta_df, paste0(output_dir, "/samplesheet_", assay, suffix, ".csv"))
 }
+
 
 
 
