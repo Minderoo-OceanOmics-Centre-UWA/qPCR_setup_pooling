@@ -235,3 +235,7 @@ The output directory will contain multiple .csv and .pdf files.
 - `clean_$assay_$plate.pdf`: Plate plots after cleaning.
 
 - `$assay_$plate_$sampletype_minipool_plot.pdf`: Sample type specific minipool plots.
+
+- `discarded_samples.csv`: The discarded samples.
+
+- `average_Cp_ITCs.csv`: The average Cp for ITC samples. Both before and after sample discarding.
