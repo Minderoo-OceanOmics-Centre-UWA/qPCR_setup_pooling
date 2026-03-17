@@ -1200,5 +1200,5 @@ for (curr_assay in assays) {
 
 final_cp_df <- rbind(cp_df, clean_cp_df)
 
-write.csv(discarded_samples, file = "discarded_samples.csv", row.names = FALSE)
-write.csv(final_cp_df, file = "average_Cp_ITCs.csv", row.names = FALSE)
+write.csv(discarded_samples, file = paste0(output_dir, "discarded_samples.csv"), row.names = FALSE)
+write.csv(final_cp_df, file = paste0(output_dir, "average_Cp_ITCs.csv"), row.names = FALSE)
