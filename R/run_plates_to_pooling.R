@@ -1162,9 +1162,43 @@ for (assay in assays) {
 }
 
 
+##########################################################
+# Average Cp
+##########################################################
 
+cp_df <- data.frame(assay=character(), cleaned=logical(), Cp_mean=numeric())
+for (curr_assay in assays) {
+    cps <- c()
+    for (row in rownames(lc480_data_sample[lc480_data_sample$assay == curr_assay, ])) {
+        
+        sam <- strsplit(lc480_data_sample[row, "SAMP_NAME"], "_")[[1]]
+        if ("ITC" %in% sam) {
+            cp <- lc480_data_sample[row, "cp"]
+            cps <- c(cps, cp)
+        }
+    }
+    print(paste0("average ITC sample's Cp for ", curr_assay, ": ", mean(cps)))
+    new_cp_df <- data.frame(assay=curr_assay, cleaned=FALSE, Cp_mean=mean(cps))
+    cp_df <- rbind(cp_df, new_cp_df)
+}
 
+clean_cp_df <- data.frame(assay=character(), cleaned=logical(), Cp_mean=numeric())
+for (curr_assay in assays) {
+    cps <- c()
+    for (row in rownames(clean_lc480_data[clean_lc480_data$assay == curr_assay, ])) {
+        
+        sam <- strsplit(clean_lc480_data[row, "SAMP_NAME"][[1]], "_")[[1]]
+        if ("ITC" %in% sam) {
+            cp <- clean_lc480_data[row, "cp"]
+            cps <- c(cps, cp[[1]])
+        }
+    }
+    print(paste0("average ITC sample's Cp for ", curr_assay, ": ", mean(cps)))
+    new_cp_df <- data.frame(assay=curr_assay, cleaned=TRUE, Cp_mean=mean(cps))
+    clean_cp_df <- rbind(clean_cp_df, new_cp_df)
+}
 
+final_cp_df <- rbind(cp_df, clean_cp_df)
 
-
-
+write.csv(discarded_samples, file = "discarded_samples.csv", row.names = FALSE)
+write.csv(final_cp_df, file = "average_Cp_ITCs.csv", row.names = FALSE)
