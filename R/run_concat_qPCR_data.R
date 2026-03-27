@@ -12,7 +12,7 @@ library(stringr)
 
 input_dir   <- "input/cp_epf_tm_files/"
 output_dir  <- "input/qPCR_data/"
-assays      <- c("16S", "MiFishU", "MiFishE2", "COILeray")
+assays      <- c("16SFishD", "MiFishU", "MiFishE2", "COILeray")
 start_plate <- 1
 
 
