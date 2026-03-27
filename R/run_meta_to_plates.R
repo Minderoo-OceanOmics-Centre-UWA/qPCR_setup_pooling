@@ -2,16 +2,16 @@ source("R/meta_to_plates.R")
 metadata    <- "test_data/input/AB_V12_V9_metadata.xlsx" # Use a vector of paths of you have multiple metadata files
 index_file  <- "input/index_Template.xlsx"
 output_file <- "output/output_df.xlsx"
-assays      <- c("16S", "MiFishU", "MiFishE2", "COILeray")
+assays      <- c("16SFishD", "MiFishU", "MiFishE2", "COILeray")
 
 plates_to_skip <- list(
-  "16S" = 0,
+  "16SFishD" = 0,
   "MiFishU" = 0,
   "MiFishE2" = 0,
   "COILeray" = 0
 )
 samples_to_skip <- list(
-  "16S" = 0,
+  "16SFishD" = 0,
   "MiFishU" = 0,
   "MiFishE2" = 0,
   "COILeray" = 0
