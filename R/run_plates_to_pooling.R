@@ -21,7 +21,7 @@ qpcr_dir     <- "input/qPCR_data/"
 output_dir   <- "output/"
 plate_width  <- 12
 plate_height <- 8
-assays       <- c("16S", "MiFishU", "MiFishE2", "COILeray")
+assays       <- c("16SFishD", "MiFishU", "MiFishE2", "COILeray")
 suffix       <- ""
 
 
