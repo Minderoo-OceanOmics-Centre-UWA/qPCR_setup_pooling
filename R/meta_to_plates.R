@@ -241,7 +241,7 @@ meta_to_plates <- function(metadata,
     }
     
     for (assay in assays) {
-        QS7_outfile <- paste0("QS7_plate_import_", assay, ".csv")
+        QS7_outfile <- paste0("output/QS7_plate_import_", assay, ".csv")
         
         write("* Block Type = 384-Well Block", file = QS7_outfile)
         write(paste0("* Date Created = ", format(Sys.time(), "%a %b %d %H:%M:%S AWST %Y")), file = QS7_outfile, append = TRUE)
