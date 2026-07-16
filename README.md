@@ -180,6 +180,7 @@ plate_width  <- 12
 plate_height <- 8
 assay        <- c("16S", "MiFish")
 suffix       <- ""
+QS7          <- TRUE
 ```
 
 ### run_plates_to_pooling variables
@@ -191,13 +192,16 @@ suffix       <- ""
 - `plate_height`: The number of rows per plate. Default = 8. Max allowed = 13. This should be the same value you used in meta_to_plates().
 - `assay`: The assays that you're working with.
 - `suffix`: What suffix would you like for your file names.
+- `QS7`: Set this to TRUE for QS7 mode, Set to FALSE for non-QS7 mode
 
 ### run_plates_to_pooling input
 
 - `input_file`: This is the output file from the meta_to_plates() function. An example can be viewed at `test_data/results.xlsx`
 - `qpcr_dir`: An example of the qpcr directory can be viewed at `test_data/qPCR_test_data`
-  - Each file in the qPCR directory should have names that end in `_$assay_$plate.txt`. An example name would be `20230901_Extraction_16S_Plate1.txt`.
-  - These txt files should be tab separated files with the columns `Experiment_name`, `Position`, `Sample`, `EPF`, `Cp`, `Tm1`, `Tm2`.
+  - if QS7 == FALSE, each file in the qPCR directory should have names that end in `_$assay_$plate.txt`. An example name would be `20230901_Extraction_16S_Plate1.txt`.
+    - These txt files should be tab separated files with the columns `Experiment_name`, `Position`, `Sample`, `EPF`, `Cp`, `Tm1`, `Tm2`.
+  - if QS7 == TRUE, each file in the qPCR directory should have names that end in `_$assay.csv`. An example name would be `1237_Run_1089146611_FPR_Results_20260703_101024.csv` or `1237_Run_1089146611_FPR_Target Call_20260624_132700.csv`.
+    - For each assay, you should have a 'Results' file that contains Tm1, and a 'Target_Call' file that contains the Delta Rn
 
 ### run_plates_to_pooling discarding samples
 
