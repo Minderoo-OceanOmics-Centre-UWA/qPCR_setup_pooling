@@ -23,6 +23,7 @@ plate_width  <- 12
 plate_height <- 8
 assays       <- c("16SFishD", "MiFishU", "MiFishE2", "COILeray")
 suffix       <- ""
+QS7          <- TRUE
 
 
 ##########################################################
@@ -96,16 +97,133 @@ read_qPCR_data <- function(file, assays, plate_numbers) {
   return(data)
 }
 
+read_QS7_data <- function(fnames, assays) {
+    all_data <- data.frame(
+        Well = character(),
+        Sample = character(),
+        sample_replicate = character(),
+        Cq = numeric(),
+        Tm1 = numeric(),
+        assay = character(),
+        Delta.Rn = numeric(),
+        stringsAsFactors = FALSE  # Keeps character columns from converting to factors
+    )
+    first_file = TRUE
+    for (file in fnames) {
+        extension <- paste0(".", file_ext(basename(file)))
+    
+        # loads in data
+        data <- tryCatch({
+            data <- read.delim(file, sep = ",", skip = 24)
+            data.frame(data)
+        }, error = function(e){
+            data <- read.delim(file, sep = ",", skip = 25)
+            data.frame(data)
+        }) 
+        if ("X" %in% colnames(data)) {
+            data <- read.delim(file, sep = ",", skip = 25)
+            data <- data.frame(data)
+        }
+        
+        
+        # get info from sample source, assay and plate id details from file name
+        data$fileName <- gsub(
+            extension,
+            "",
+            basename(file)
+        )
+        description       <- strsplit(data$fileName, "_")
+        desc_count        <- length(description[[1]])
+        data$assay <- sapply(description, "[", desc_count)
+        
+        curr_assay <- unique(data$assay)
+        if (! curr_assay %in% assays) {
+            stop(
+                paste0(
+                    "Error: assay - ",
+                    curr_assay,
+                    " taken from file ",
+                    file,
+                    " not found in ",
+                    assays,
+                    " Make sure filename ends in _$assay.txt"
+                )
+            )
+        }
+        if (nchar(data[1, "Well"]) == 2) {
+            table_type <- "delta"
+        } else {
+            table_type <- "tm1"
+        }
+        
+        for (row in rownames(data)) {
+            sam_rep <- data[row, "Sample"]
+            sam     <- strsplit(sam_rep, "-")[[1]][1]
+            if (table_type == "delta") {
+                well     <- data[row, "Well"]
+                delta_rn <- as.numeric(data[row, "Delta.Rn"])
+            } else {
+                well <- data[row, "Well.Position"]
+                tm1  <- as.numeric(data[row, "Tm1"])
+            }
+            Cq    <- data[row, "Cq"]
+            assay <- data[row, "assay"]
+            
+            if (length(rownames(all_data[all_data$sample_replicate == sam_rep & all_data$assay == assay, ])) == 0) {
+                if (Cq == "UNDETERMINED") {
+                    Cq <- NA
+                } else {
+                    Cq <- as.numeric(Cq)
+                }
+                if (table_type == "delta") {
+                    new_row <- data.frame(
+                        Well = well,
+                        Sample = sam,
+                        sample_replicate = sam_rep,
+                        Cq = Cq,
+                        Tm1 = NA,
+                        assay = assay,
+                        Delta.Rn = delta_rn,
+                        stringsAsFactors = FALSE
+                    )
+                    all_data <- rbind(all_data, new_row)
+                } else {
+                    new_row <- data.frame(
+                        Well = well,
+                        Sample = sam,
+                        sample_replicate = sam_rep,
+                        Cq = Cq,
+                        Tm1 = tm1,
+                        assay = assay,
+                        Delta.Rn = NA,
+                        stringsAsFactors = FALSE
+                    )
+                    all_data <- rbind(all_data, new_row)
+                }
+            } else {
+                if (table_type == "delta") {
+                    all_data[all_data$sample_replicate == sam_rep & all_data$assay == assay, "Delta.Rn"] <- delta_rn
+                } else {
+                    all_data[all_data$sample_replicate == sam_rep & all_data$assay == assay, "Tm1"]      <- tm1
+                }
+            }
+        }
+    }
+    
+    return(all_data)
+}
+
 export_plate_pdfs <- function(df,
                               plate_numbers,
                               assays,
                               output_dir,
                               prefix,
                               plate_width,
-                              plate_height) {
+                              plate_height,
+                              QS7) {
 
   for (curr_assay in assays) {
-    for (curr_plate in plate_numbers[curr_assay][[1]]) {
+    if (QS7) {
       pdf(
         paste0(
           output_dir,
@@ -113,23 +231,48 @@ export_plate_pdfs <- function(df,
           prefix,
           "_",
           curr_assay,
-          "_",
-          curr_plate,
           suffix,
           ".pdf"
         )
       )
-      plate_plot_epf <- df %>%
-        filter(plate_number == curr_plate & assay == curr_assay) %>%
-        plate_plot(
-          position = pos,
-          value = epf,
-          label = round(epf, digits = 1),
-          plate_size = (plate_width * 2) * (plate_height * 2),
-          title = paste0(unique(.$plate_number), " ", unique(.$assay))
-        )
-      print(plate_plot_epf)
+      plate_plot_delta_rn <- df %>%
+      filter(assay == curr_assay) %>%
+      plate_plot(
+        position = Well,
+        value = Delta.Rn,
+        label = round(Delta.Rn, digits = 1),
+        plate_size = (plate_width * 2) * (plate_height * 2),
+        title = paste0(unique(.$assay))
+      )
+      print(plate_plot_delta_rn)
       dev.off()
+    } else {
+      for (curr_plate in plate_numbers[curr_assay][[1]]) {
+        pdf(
+          paste0(
+            output_dir,
+            "/",
+            prefix,
+            "_",
+            curr_assay,
+            "_",
+            curr_plate,
+            suffix,
+            ".pdf"
+          )
+        )
+        plate_plot_epf <- df %>%
+          filter(plate_number == curr_plate & assay == curr_assay) %>%
+          plate_plot(
+            position = pos,
+            value = epf,
+            label = round(epf, digits = 1),
+            plate_size = (plate_width * 2) * (plate_height * 2),
+            title = paste0(unique(.$plate_number), " ", unique(.$assay))
+          )
+        print(plate_plot_epf)
+        dev.off()
+      }
     }
   }
 }
@@ -770,40 +913,80 @@ if (TRUE) {
     plate_numbers[assay] = list(unique(position_df[position_df$assay == assay, "plate_number"]))
   }
 
-  all_lc480_data <- ldply(fnames, read_qPCR_data, assays, plate_numbers)
-  all_lc480_data <- change_lc480_colnames(all_lc480_data)
-  
-  all_lc480_data$sample <- tryCatch({
-    all_lc480_data$sample <- str_replace(all_lc480_data$sample, "Sample", "")
-    all_lc480_data$sample <- trimws(all_lc480_data$sample)
-    all_lc480_data$sample
-  }, error = function(e) {
-    all_lc480_data$sample <- seq_len(nrow(all_lc480_data))
-    all_lc480_data$sample
-  })
-  
-  # Make sure qPCR data isn't missing any plates
-  for (assay in assays) {
-    missing_plates <- c()
-    for (plate in plate_numbers[assay][[1]]) {
-      if (! plate %in% unique(all_lc480_data[all_lc480_data$assay == assay, "plate_number"])) {
-        missing_plates <- c(missing_plates, plate)
+  if (QS7) {
+    #all_lc480_data <- data.frame(
+    #  Well = character(),
+    #  Sample = character(),
+    #  Cq = numeric(),
+    #  Tm1 = numeric(),
+    #  assay = character(),
+    #  Delta.Rn = numeric(),
+    #  stringsAsFactors = FALSE  # Keeps character columns from converting to factors
+    #)
+    #all_lc480_data_tmp <- ldply(fnames, read_QS7_data, assays)
+    lc480_data_sample <- read_QS7_data(fnames, assays)
+      
+    #for (assay in unique(all_lc480_data_tmp$assay)) {
+    #  for (sample in unique(all_lc480_data_tmp$Sample)) {
+    #    if (sample != "") {
+    #        subset <- all_lc480_data_tmp[all_lc480_data_tmp$Sample == sample & all_lc480_data_tmp$assay == assay, ]
+    #        wells <- subset$Well.Position
+    #        wells <- wells[!is.na(wells)]
+    #        for (well in wells) {
+    #          cq = subset[subset$Well.Position == well, "Cq"]
+    #          if (cq[!is.na(cq)] == "UNDETERMINED") {
+    #              cq = NA
+    #          } else {
+    #              cq = as.numeric(cq[!is.na(cq)])    
+    #          }
+    #          tm1 = subset[subset$Well.Position == well, "Tm1"]
+    #          tm1 = as.numeric(tm1[!is.na(tm1)])
+    #          delta_rn = subset[subset$Well == well, "Delta.Rn"]
+    #          delta_rn = as.numeric(delta_rn[!is.na(delta_rn)])
+          
+    #          new_row = data.frame(Well = well, Sample = sample, Cq = cq, Tm1 = tm1, assay = assay, Delta.Rn = delta_rn)
+    #          all_lc480_data <- bind_rows(all_lc480_data, new_row)
+    #        }
+    #    }
+    #  }
+    #}
+    #lc480_data_sample = all_lc480_data
+  } else {
+    all_lc480_data <- ldply(fnames, read_qPCR_data, assays, plate_numbers)  
+    all_lc480_data <- change_lc480_colnames(all_lc480_data)
+      
+    all_lc480_data$sample <- tryCatch({
+      all_lc480_data$sample <- str_replace(all_lc480_data$sample, "Sample", "")
+      all_lc480_data$sample <- trimws(all_lc480_data$sample)
+      all_lc480_data$sample
+    }, error = function(e) {
+      all_lc480_data$sample <- seq_len(nrow(all_lc480_data))
+      all_lc480_data$sample
+    })
+      
+    # Make sure qPCR data isn't missing any plates
+    for (assay in assays) {
+      missing_plates <- c()
+      for (plate in plate_numbers[assay][[1]]) {
+        if (! plate %in% unique(all_lc480_data[all_lc480_data$assay == assay, "plate_number"])) {
+          missing_plates <- c(missing_plates, plate)
+        }
+      }
+      if (length(missing_plates) > 0) {
+        print("qPCR data directory is missing plates: ")
+        print(missing_plates)
+        stop()
       }
     }
-    if (length(missing_plates) > 0) {
-      print("qPCR data directory is missing plates: ")
-      print(missing_plates)
-      stop()
-    }
+    
+    lc480_data_sample <- all_lc480_data %>%
+      mutate(plate_number_pos = paste(plate_number, position, sep = ".")) %>%
+      dplyr::select(-position, -plate_number) %>%
+      left_join(., position_df, by = c("plate_number_pos", "assay")) %>%
+      filter(., replicate != "pool")
+    
+    lc480_data_sample$sample <- lc480_data_sample$SAMPLE
   }
-
-  lc480_data_sample <- all_lc480_data %>%
-    mutate(plate_number_pos = paste(plate_number, position, sep = ".")) %>%
-    dplyr::select(-position, -plate_number) %>%
-    left_join(., position_df, by = c("plate_number_pos", "assay")) %>%
-    filter(., replicate != "pool")
-
-  lc480_data_sample$sample <- lc480_data_sample$SAMPLE
 }
 
 
@@ -813,27 +996,41 @@ if (TRUE) {
 
 # visualise EPF data in a heatmap
 prefix <- "raw"
-export_plate_pdfs(
-  lc480_data_sample,
-  plate_numbers,
-  assays,
-  output_dir,
-  prefix,
-  plate_width,
-  plate_height
+    export_plate_pdfs(
+    lc480_data_sample,
+    plate_numbers,
+    assays,
+    output_dir,
+    prefix,
+    plate_width,
+    plate_height,
+    QS7
 )
 
 # The plots are outputed into the output_dir specified as .pdf but let's look at one of those plots in R studio. 
-plate_plot_epf <- lc480_data_sample %>%
-  filter(plate_number == "Plate2" & assay == "16S") %>%
-  plate_plot(
-    position = pos,
-    value = epf,
-    label = round(epf, digits = 1),
-    plate_size = (plate_width * 2) * (plate_height * 2),
-    title = paste0(unique(.$plate_number), " ", unique(.$assay))
-  )
-print(plate_plot_epf)
+if (QS7) {
+    plate_plot_delta_rn <- lc480_data_sample %>%
+        filter(assay == "16SFishD") %>%
+        plate_plot(
+            position = Well,
+            value = Delta.Rn,
+            label = round(Delta.Rn, digits = 1),
+            plate_size = (plate_width * 2) * (plate_height * 2),
+            title = paste0(unique(.$assay))
+        )
+    print(plate_plot_delta_rn)
+} else {
+    plate_plot_epf <- lc480_data_sample %>%
+        filter(plate_number == "Plate2" & assay == "16S") %>%
+        plate_plot(
+            position = pos,
+            value = epf,
+            label = round(epf, digits = 1),
+            plate_size = (plate_width * 2) * (plate_height * 2),
+            title = paste0(unique(.$plate_number), " ", unique(.$assay))
+        )
+    print(plate_plot_epf)  
+}
 
 
 ##########################################################
@@ -843,94 +1040,165 @@ print(plate_plot_epf)
 # identify failed reactions using minimum EPF of 2 and maximum cp of 40
 # (for real samples only, criteria not applied to
 # controls as these are all taken through to sequencing )
-rep_failed <- lc480_data_sample %>%
-  mutate(
-    discard = case_when(
-      replicate == "pool" ~ "NA",
-      (sample_type == "sample" & epf < 2) | (sample_type == "sample" & cp > 40) ~ "DISCARD",
-      TRUE ~ "KEEP"
-    )
-  ) %>%
-  arrange(sample_order(SAMP_NAME))
-
-# Flag samples with epf between 2 and 5
-rep_failed <- rep_failed %>%
-  mutate(
-    epf_2_to_5 = case_when(
-      (sample_type == "sample" & epf >= 2) & (sample_type == "sample" & epf <= 5) ~ TRUE,
-      TRUE ~ FALSE
-    )
-  ) %>%
-  arrange(sample_order(SAMP_NAME))
-
-# Flag samples with tm1 outside of standard deviation
-rep_failed$tm1_sd         <- NA
-rep_failed$tm1_mean       <- NA
-rep_failed$tm1_outside_sd <- NA
-for (curr_assay in assays) {
-  plates <- unique(rep_failed[rep_failed$assay == curr_assay, "plate_number"])
-  for (curr_plate in plates) {
-    tm1s       <- rep_failed[rep_failed$assay == curr_assay & rep_failed$plate_number == curr_plate & rep_failed$sample_type == "sample", "tm1"]
-    tm1_sd     <- sd(na.omit(tm1s))
-    tm1_mean   <- mean(na.omit(tm1s))
-    tm1_min    <- tm1_mean - tm1_sd
-    tm1_max    <- tm1_mean + tm1_sd
-    rep_failed[rep_failed$assay == curr_assay & rep_failed$plate_number == curr_plate, "tm1_sd"]   <- sd(na.omit(tm1s))
-    rep_failed[rep_failed$assay == curr_assay & rep_failed$plate_number == curr_plate, "tm1_mean"] <- mean(na.omit(tm1s))
-
-    rep_failed[rep_failed$assay == curr_assay & rep_failed$plate_number == curr_plate, ] <- rep_failed[rep_failed$assay == curr_assay & rep_failed$plate_number == curr_plate, ] %>%
-      mutate(
-        tm1_outside_sd = case_when(
-          (tm1 < tm1_min | tm1 > tm1_max) ~ TRUE,
-          TRUE ~ FALSE
-        )
-      ) %>%
-      arrange(sample_order(SAMP_NAME))
-  }
+if (QS7) {
+    rep_failed <- lc480_data_sample %>%
+        mutate(
+            discard = case_when(
+                (Delta.Rn < 2) | (Cq > 40) ~ "DISCARD",
+                TRUE ~ "KEEP"
+            )
+        ) %>%
+        arrange(sample_order(Sample))
+    
+    # Flag samples with epf between 2 and 5
+    rep_failed <- rep_failed %>%
+        mutate(
+            delta_rn_2_to_5 = case_when(
+                (Delta.Rn >= 2) & (Delta.Rn <= 5) ~ TRUE,
+                TRUE ~ FALSE
+            )
+        ) %>%
+        arrange(sample_order(Sample))
+    
+    # Flag samples with tm1 outside of standard deviation
+    rep_failed$tm1_sd         <- NA
+    rep_failed$tm1_mean       <- NA
+    rep_failed$tm1_outside_sd <- NA
+    for (curr_assay in assays) {
+        tm1s       <- rep_failed[rep_failed$assay == curr_assay, "Tm1"]
+        tm1_sd     <- sd(na.omit(tm1s))
+        tm1_mean   <- mean(na.omit(tm1s))
+        tm1_min    <- tm1_mean - tm1_sd
+        tm1_max    <- tm1_mean + tm1_sd
+        rep_failed[rep_failed$assay == curr_assay, "tm1_sd"]   <- sd(na.omit(tm1s))
+        rep_failed[rep_failed$assay == curr_assay, "tm1_mean"] <- mean(na.omit(tm1s))
+            
+        rep_failed[rep_failed$assay == curr_assay, ] <- rep_failed[rep_failed$assay == curr_assay, ] %>%
+            mutate(
+                tm1_outside_sd = case_when(
+                    (Tm1 < tm1_min | Tm1 > tm1_max) ~ TRUE,
+                    TRUE ~ FALSE
+                )
+            ) %>%
+            arrange(sample_order(Sample))
+    }
+} else {
+    rep_failed <- lc480_data_sample %>%
+        mutate(
+            discard = case_when(
+                replicate == "pool" ~ "NA",
+                (sample_type == "sample" & epf < 2) | (sample_type == "sample" & cp > 40) ~ "DISCARD",
+                TRUE ~ "KEEP"
+            )
+        ) %>%
+        arrange(sample_order(SAMP_NAME))
+    
+    # Flag samples with epf between 2 and 5
+    rep_failed <- rep_failed %>%
+        mutate(
+            epf_2_to_5 = case_when(
+                (sample_type == "sample" & epf >= 2) & (sample_type == "sample" & epf <= 5) ~ TRUE,
+                TRUE ~ FALSE
+            )
+        ) %>%
+        arrange(sample_order(SAMP_NAME))
+    
+    # Flag samples with tm1 outside of standard deviation
+    rep_failed$tm1_sd         <- NA
+    rep_failed$tm1_mean       <- NA
+    rep_failed$tm1_outside_sd <- NA
+    for (curr_assay in assays) {
+        plates <- unique(rep_failed[rep_failed$assay == curr_assay, "plate_number"])
+        for (curr_plate in plates) {
+            tm1s       <- rep_failed[rep_failed$assay == curr_assay & rep_failed$plate_number == curr_plate & rep_failed$sample_type == "sample", "tm1"]
+            tm1_sd     <- sd(na.omit(tm1s))
+            tm1_mean   <- mean(na.omit(tm1s))
+            tm1_min    <- tm1_mean - tm1_sd
+            tm1_max    <- tm1_mean + tm1_sd
+            rep_failed[rep_failed$assay == curr_assay & rep_failed$plate_number == curr_plate, "tm1_sd"]   <- sd(na.omit(tm1s))
+            rep_failed[rep_failed$assay == curr_assay & rep_failed$plate_number == curr_plate, "tm1_mean"] <- mean(na.omit(tm1s))
+            
+            rep_failed[rep_failed$assay == curr_assay & rep_failed$plate_number == curr_plate, ] <- rep_failed[rep_failed$assay == curr_assay & rep_failed$plate_number == curr_plate, ] %>%
+                mutate(
+                    tm1_outside_sd = case_when(
+                        (tm1 < tm1_min | tm1 > tm1_max) ~ TRUE,
+                        TRUE ~ FALSE
+                    )
+                ) %>%
+                arrange(sample_order(SAMP_NAME))
+        }
+    }
 }
-
+    
 
 ##########################################################
 # View the worse reps
 ##########################################################
 
 # summary of number of reps to be discarded per sample
-rep_failed_summary <- rep_failed %>%
-  filter(replicate != "pool") %>%
-  dplyr::group_by(SAMP_NAME, assay) %>%
-  dplyr::summarise(count_discard = sum(discard == "DISCARD")) %>%
-  ungroup() %>%
-  arrange(sample_order(SAMP_NAME))
-
+if (QS7) {
+    rep_failed_summary <- rep_failed %>%
+        dplyr::group_by(Sample, assay) %>%
+        dplyr::summarise(count_discard = sum(discard == "DISCARD")) %>%
+        ungroup() %>%
+        arrange(sample_order(Sample))
+    
+    # Create csv file with failed samples
+    for (curr_assay in assays) {
+        write.csv(
+            rep_failed_summary %>%
+                filter(assay == curr_assay, count_discard >= 2), 
+            paste0(curr_assay, "_failed_samples.csv")
+        )
+    }
+} else {
+    rep_failed_summary <- rep_failed %>%
+        filter(replicate != "pool") %>%
+        dplyr::group_by(SAMP_NAME, assay) %>%
+        dplyr::summarise(count_discard = sum(discard == "DISCARD")) %>%
+        ungroup() %>%
+        arrange(sample_order(SAMP_NAME))
+    
+    # Create csv file with failed samples
+    for (curr_assay in assays) {    
+        write.csv(
+            rep_failed_summary %>%
+                filter(assay == curr_assay, count_discard >= 2), 
+            paste0(curr_assay, "_failed_samples.csv")
+        )
+    }
+}
+    
 # identify the total number of samples per assay
 # with replicates to be discarded
 print_failed_rep_message(rep_failed_summary, assays)
-
-# Create csv file with failed samples
-write.csv(
-  rep_failed_summary %>%
-      filter(assay == curr_assay, count_discard >= 2), 
-  paste0(curr_assay, "_failed_samples.csv")
-)
-
+    
 # print the failed reps (reps where the epf < 2 and the Cp >40)
 discard_df <- print(rep_failed[rep_failed$discard == "DISCARD", ])
 
 # print the reps with epf between 2 to 5  
-print(rep_failed[rep_failed$epf_2_to_5 == TRUE, ])
+if (QS7) print(rep_failed[rep_failed$delta_rn_2_to_5 == TRUE, ]) else print(rep_failed[rep_failed$epf_2_to_5 == TRUE, ])
 
 # print reps with tm1 outside of standard deviation
 print(rep_failed[rep_failed$tm1_outside_sd == TRUE, ])
 
 # Print all the bad reps
-print(rep_failed[(rep_failed$tm1_outside_sd == TRUE | rep_failed$epf_2_to_5 == TRUE | rep_failed$discard == "DISCARD") & rep_failed$sample_type == "sample", ])
+if (QS7) {
+    print(rep_failed[(rep_failed$tm1_outside_sd == TRUE | rep_failed$delta_rn_2_to_5 == TRUE | rep_failed$discard == "DISCARD"), ]) 
+} else { 
+    print(rep_failed[(rep_failed$tm1_outside_sd == TRUE | rep_failed$epf_2_to_5 == TRUE | rep_failed$discard == "DISCARD") & rep_failed$sample_type == "sample", ])
+}
 
 
 ##########################################################
 # Output rxns_to_check.csv
 ##########################################################
 
-write.csv(row.names = FALSE, rep_failed[(rep_failed$tm1_outside_sd == TRUE | rep_failed$epf_2_to_5 == TRUE | rep_failed$discard == "DISCARD") & rep_failed$sample_type == "sample", ], paste0(output_dir, "rxns_to_check", suffix, ".csv"))
+if (QS7) {
+    write.csv(row.names = FALSE, rep_failed[(rep_failed$tm1_outside_sd == TRUE | rep_failed$delta_rn_2_to_5 == TRUE | rep_failed$discard == "DISCARD"), ], paste0(output_dir, "rxns_to_check", suffix, ".csv"))
+} else {
+    write.csv(row.names = FALSE, rep_failed[(rep_failed$tm1_outside_sd == TRUE | rep_failed$epf_2_to_5 == TRUE | rep_failed$discard == "DISCARD") & rep_failed$sample_type == "sample", ], paste0(output_dir, "rxns_to_check", suffix, ".csv"))
+}
 
 
 ######################################################
@@ -965,22 +1233,31 @@ for (row in 1:nrow(checked_runs)) {
 write.csv(row.names = FALSE, rep_failed, paste0(output_dir, "rxns_checked", suffix, ".csv"))
 
 # summary of number of reps to be discarded per sample 
-rep_failed_summary <- rep_failed %>%   
-  filter(replicate != "pool") %>%   
-  dplyr::group_by(SAMP_NAME, assay) %>%   
-  dplyr::summarise(count_discard = sum(discard == "DISCARD")) %>%   
-  ungroup() %>%   
-  arrange(sample_order(SAMP_NAME)) 
-# identify the total number of samples per assay 
-# with replicates to be discarded print_failed_rep_message(rep_failed_summary, assays) 
+if (QS7) {
+    rep_failed_summary <- rep_failed %>%   
+        dplyr::group_by(Sample, assay) %>%   
+        dplyr::summarise(count_discard = sum(discard == "DISCARD")) %>%   
+        ungroup() %>%   
+        arrange(sample_order(Sample)) 
+} else {
+    rep_failed_summary <- rep_failed %>%   
+        filter(replicate != "pool") %>%   
+        dplyr::group_by(SAMP_NAME, assay) %>%   
+        dplyr::summarise(count_discard = sum(discard == "DISCARD")) %>%   
+        ungroup() %>%   
+        arrange(sample_order(SAMP_NAME)) 
+}
+
 # print the failed reps (reps where the epf < 2 and the Cp >40) 
 discard_df <- print(rep_failed[rep_failed$discard == "DISCARD", ]) 
+
 # print the reps with epf between 2 to 5   
-print(rep_failed[rep_failed$epf_2_to_5 == TRUE, ]) 
+if (QS7) print(rep_failed[rep_failed$delta_rn_2_to_5 == TRUE, ]) else print(rep_failed[rep_failed$epf_2_to_5 == TRUE, ]) 
 # print reps with tm1 outside of standard deviation 
 print(rep_failed[rep_failed$tm1_outside_sd == TRUE, ]) 
 # Print all the bad reps 
-print(rep_failed[(rep_failed$tm1_outside_sd == TRUE | rep_failed$epf_2_to_5 == TRUE | rep_failed$discard == "DISCARD") & rep_failed$sample_type == "sample", ]) 
+if (QS7) print(rep_failed[(rep_failed$tm1_outside_sd == TRUE | rep_failed$delta_rn_2_to_5 == TRUE | rep_failed$discard == "DISCARD"), ]) else
+    print(rep_failed[(rep_failed$tm1_outside_sd == TRUE | rep_failed$epf_2_to_5 == TRUE | rep_failed$discard == "DISCARD") & rep_failed$sample_type == "sample", ])
 
 
 ##########################################################
@@ -988,28 +1265,50 @@ print(rep_failed[(rep_failed$tm1_outside_sd == TRUE | rep_failed$epf_2_to_5 == T
 ##########################################################
 
 #identify samples to be completely removed from pool (DISCARD >= 2)
-discarded_samples <- rep_failed_summary %>%
-    filter(count_discard >= 2) %>%
-    arrange(SAMP_NAME)
+if (QS7) {
+    discarded_samples <- rep_failed_summary %>%
+        filter(count_discard >= 2) %>%
+        arrange(Sample)
 
-# export table for manual removal of failed replicates from 384-well plates
-## AB - can this please only include samples where 1 replicate needs to be discarded.
-# In cases where >1 rep is discarded
-reps_to_discard <- rep_failed %>%
-    dplyr::select(assay, plate_number, pos, sample_replicate, discard) %>%
-    filter(discard == "DISCARD")
-
-if (nrow(reps_to_discard) != 0) {
-    reps_to_discard <- reps_to_discard %>%
-        arrange(plate_number, sample_order(pos))
-        
-    reps_to_discard$samp_name <- substr(reps_to_discard$sample_replicate, 1, nchar(reps_to_discard$sample_replicate)-2)
+    # export table for manual removal of failed replicates from 384-well plates
+    reps_to_discard <- rep_failed %>%
+        dplyr::select(assay, Well, sample_replicate, discard) %>%
+        filter(discard == "DISCARD")
     
-    # Keep only rows where the sample is not duplicated
-    duplicated_rows <- duplicated(reps_to_discard[c("assay", "samp_name")]) | duplicated(reps_to_discard[c("assay", "samp_name")], fromLast = TRUE)
-    reps_to_discard <- subset(reps_to_discard, !duplicated_rows)
+    if (nrow(reps_to_discard) != 0) {
+        reps_to_discard <- reps_to_discard %>%
+            arrange(sample_order(Well))
+        
+        reps_to_discard$samp_name <- substr(reps_to_discard$sample_replicate, 1, nchar(reps_to_discard$sample_replicate)-2)
+        
+        # Keep only rows where the sample is not duplicated
+        duplicated_rows <- duplicated(reps_to_discard[c("assay", "samp_name")]) | duplicated(reps_to_discard[c("assay", "samp_name")], fromLast = TRUE)
+        reps_to_discard <- subset(reps_to_discard, !duplicated_rows)
+    } else {
+        reps_to_discard <- cbind(reps_to_discard, samp_name)
+    }
 } else {
-    reps_to_discard <- cbind(reps_to_discard, samp_name)
+    discarded_samples <- rep_failed_summary %>%
+        filter(count_discard >= 2) %>%
+        arrange(SAMP_NAME)
+
+    # export table for manual removal of failed replicates from 384-well plates
+    reps_to_discard <- rep_failed %>%
+        dplyr::select(assay, plate_number, pos, sample_replicate, discard) %>%
+        filter(discard == "DISCARD")
+    
+    if (nrow(reps_to_discard) != 0) {
+        reps_to_discard <- reps_to_discard %>%
+            arrange(plate_number, sample_order(pos))
+        
+        reps_to_discard$samp_name <- substr(reps_to_discard$sample_replicate, 1, nchar(reps_to_discard$sample_replicate)-2)
+        
+        # Keep only rows where the sample is not duplicated
+        duplicated_rows <- duplicated(reps_to_discard[c("assay", "samp_name")]) | duplicated(reps_to_discard[c("assay", "samp_name")], fromLast = TRUE)
+        reps_to_discard <- subset(reps_to_discard, !duplicated_rows)
+    } else {
+        reps_to_discard <- cbind(reps_to_discard, samp_name)
+    }
 }
 
 write.csv(reps_to_discard, file = paste0(output_dir, "/reps_to_discard", suffix, ".csv"), row.names=FALSE, quote=FALSE)
@@ -1019,9 +1318,15 @@ write.csv(reps_to_discard, file = paste0(output_dir, "/reps_to_discard", suffix,
 # Visualise clean data
 ##########################################################
 
-clean_lc480_data <- rep_failed %>%
-  dplyr::group_by(assay, SAMP_NAME) %>%
-  filter(discard=="KEEP")
+if (QS7) {
+    clean_lc480_data <- rep_failed %>%
+        dplyr::group_by(assay, Sample) %>%
+        filter(discard=="KEEP")
+} else {
+    clean_lc480_data <- rep_failed %>%
+        dplyr::group_by(assay, SAMP_NAME) %>%
+        filter(discard=="KEEP")
+}
 
 
 ##### visualise clean EPF data in a heatmap ####
@@ -1033,20 +1338,34 @@ export_plate_pdfs(
   output_dir,
   prefix,
   plate_width,
-  plate_height
+  plate_height,
+  QS7
 )
 
 # Let's look at one of those plots in R studio
-clean_plate_plot_epf <- clean_lc480_data %>%
-  filter(plate_number == "Plate5" & assay == "MiFish") %>%
-  plate_plot(
-    position = pos,
-    value = epf,
-    label = round(epf, digits = 1),
-    plate_size = (plate_width * 2) * (plate_height * 2),
-    title = paste0(unique(.$plate_number), " ", unique(.$assay))
-  )
-print(clean_plate_plot_epf)
+if (QS7) {
+    clean_plate_plot_epf <- clean_lc480_data %>%
+        filter(assay == "16SFishD") %>%
+        plate_plot(
+            position = Well,
+            value = Delta.Rn,
+            label = round(Delta.Rn, digits = 1),
+            plate_size = (plate_width * 2) * (plate_height * 2),
+            title = paste0(unique(.$assay))
+        )
+    print(clean_plate_plot_epf)
+} else {
+    clean_plate_plot_epf <- clean_lc480_data %>%
+        filter(plate_number == "Plate5" & assay == "16SFishD") %>%
+        plate_plot(
+            position = pos,
+            value = epf,
+            label = round(epf, digits = 1),
+            plate_size = (plate_width * 2) * (plate_height * 2),
+            title = paste0(unique(.$plate_number), " ", unique(.$assay))
+        )
+    print(clean_plate_plot_epf)
+}
 
 
 ##########################################################
@@ -1056,45 +1375,82 @@ print(clean_plate_plot_epf)
 # summary EPF samples and controls
 # (at this point is still includes failed replicates -
 # this is ok, as they are filtered later)
-epf_cal <- rep_failed %>%
-  dplyr::group_by(assay, SAMP_NAME, sample_type) %>%
-  dplyr::summarise(
-    median = median(epf, na.rm = TRUE),
-    mean = mean(epf, na.rm = TRUE),
-    sd = sd(epf, na.rm = TRUE),
-    min =  min(epf),
-    max = max(epf),
-    diff_epf = max(epf) - min(epf),
-    number_valid_reps = (sum(discard == "KEEP") >= 2)) %>%
-  arrange(sample_order(SAMP_NAME)) %>%
-  ungroup()
+if (QS7) {
+    delta_rn_cal <- rep_failed %>%
+        dplyr::group_by(assay, Sample) %>%
+        dplyr::summarise(
+            median = median(Delta.Rn, na.rm = TRUE),
+            mean = mean(Delta.Rn, na.rm = TRUE),
+            sd = sd(Delta.Rn, na.rm = TRUE),
+            min =  min(Delta.Rn),
+            max = max(Delta.Rn),
+            diff_delta_rn = max(Delta.Rn) - min(Delta.Rn),
+            number_valid_reps = (sum(discard == "KEEP") >= 2)) %>%
+        arrange(sample_order(Sample)) %>%
+        ungroup()
+    
+    # assign calculated mean to respective sample-pool
+    # in the original plate layout
+    # for samples that have 2 or more useful replicates
+    delta_rn_cal_mean <- delta_rn_cal %>%
+        filter(number_valid_reps == TRUE) %>%
+        mutate(sample_replicate = paste0(Sample, "-pool")) %>%
+        mutate(
+            assay_sample_replicate = paste0(
+                assay, ".", sample_replicate
+            )
+        ) %>%
+        dplyr::select(assay_sample_replicate, mean)
+    
+    position_df_pool <- position_df %>%
+        filter(grepl("pool", replicate)) %>%
+        mutate(
+            assay_sample_replicate = paste0(
+                assay, ".", sample_replicate
+            )
+        ) %>%
+        left_join(delta_rn_cal_mean, by = "assay_sample_replicate") #%>%
+    #na.omit(position_df_pool$mean)
+    position_df_pool <- position_df_pool[(position_df_pool$sample_type == "control" | !is.na(position_df_pool$mean)), ]
+} else {
+    epf_cal <- rep_failed %>%
+        dplyr::group_by(assay, SAMP_NAME, sample_type) %>%
+        dplyr::summarise(
+            median = median(epf, na.rm = TRUE),
+            mean = mean(epf, na.rm = TRUE),
+            sd = sd(epf, na.rm = TRUE),
+            min =  min(epf),
+            max = max(epf),
+            diff_epf = max(epf) - min(epf),
+            number_valid_reps = (sum(discard == "KEEP") >= 2)) %>%
+        arrange(sample_order(SAMP_NAME)) %>%
+        ungroup()
+    
+    # assign calculated mean to respective sample-pool
+    # in the original plate layout
+    # for samples that have 2 or more useful replicates & all control samples
+    epf_cal_mean <- epf_cal %>%
+        filter(number_valid_reps == TRUE) %>%
+        mutate(sample_replicate = paste0(Sample, "-pool")) %>%
+        mutate(
+            assay_sample_replicate = paste0(
+                assay, ".", sample_replicate
+            )
+        ) %>%
+        dplyr::select(assay_sample_replicate, mean)
 
-# assign calculated mean to respective sample-pool
-# in the original plate layout
-# for samples that have 2 or more useful replicates & all control samples
-epf_cal_mean <- epf_cal %>%
-  filter(
-    sample_type == "control" |
-      (sample_type == "sample" & number_valid_reps == TRUE)
-  ) %>%
-  mutate(sample_replicate = paste0(SAMP_NAME, "-pool")) %>%
-  mutate(
-    assay_sample_replicate = paste0(
-      assay, ".", sample_replicate
-    )
-  ) %>%
-  dplyr::select(assay_sample_replicate, mean)
+    position_df_pool <- position_df %>%
+        filter(grepl("pool", replicate)) %>%
+        mutate(
+            assay_sample_replicate = paste0(
+                assay, ".", sample_replicate
+            )
+        ) %>%
+        left_join(epf_cal_mean, by = "assay_sample_replicate") #%>%
+    #na.omit(position_df_pool$mean)
+    position_df_pool <- position_df_pool[(position_df_pool$sample_type == "control" | !is.na(position_df_pool$mean)), ]
+}
 
-position_df_pool <- position_df %>%
-  filter(grepl("pool", replicate)) %>%
-  mutate(
-    assay_sample_replicate = paste0(
-      assay, ".", sample_replicate
-    )
-  ) %>%
-  left_join(epf_cal_mean, by = "assay_sample_replicate") #%>%
-  #na.omit(position_df_pool$mean)
-position_df_pool <- position_df_pool[(position_df_pool$sample_type == "control" | !is.na(position_df_pool$mean)), ]
 
 ##########################################################
 # Minipool Generation Calcs & Run output function
@@ -1152,13 +1508,17 @@ write_csv(minipool_vols_summary, paste0(output_dir, "/minipool_summary", suffix,
 
 # Create samplesheets with info on discarded samples
 for (assay in assays) {
-  meta_df           <- import_samplesheet_df(input_file, assay)
-  meta_df$discarded <- FALSE
-  curr_disc_sams    <- discarded_samples[discarded_samples$assay == assay, ]
+    meta_df           <- import_samplesheet_df(input_file, assay)
+    meta_df$discarded <- FALSE
+    curr_disc_sams    <- discarded_samples[discarded_samples$assay == assay, ]
   
-  meta_df$discarded <- ifelse(meta_df$samp_name %in% curr_disc_sams$SAMP_NAME, TRUE, meta_df$discarded)
-  
-  write_csv(meta_df, paste0(output_dir, "/samplesheet_", assay, suffix, ".csv"))
+    if (QS7) {
+        meta_df$discarded <- ifelse(meta_df$samp_name %in% curr_disc_sams$Sample, TRUE, meta_df$discarded)
+    } else {
+        meta_df$discarded <- ifelse(meta_df$samp_name %in% curr_disc_sams$SAMP_NAME, TRUE, meta_df$discarded)
+    }
+ 
+    write_csv(meta_df, paste0(output_dir, "/samplesheet_", assay, suffix, ".csv"))
 }
 
 
@@ -1166,39 +1526,79 @@ for (assay in assays) {
 # Average Cp
 ##########################################################
 
-cp_df <- data.frame(assay=character(), cleaned=logical(), Cp_mean=numeric())
-for (curr_assay in assays) {
-    cps <- c()
-    for (row in rownames(lc480_data_sample[lc480_data_sample$assay == curr_assay, ])) {
-        
-        sam <- strsplit(lc480_data_sample[row, "SAMP_NAME"], "_")[[1]]
-        if ("ITC" %in% sam) {
-            cp <- lc480_data_sample[row, "cp"]
-            cps <- c(cps, cp)
+if (QS7) {
+    cq_df <- data.frame(assay=character(), cleaned=logical(), Cq_mean=numeric())
+    for (curr_assay in assays) {
+        cqs <- c()
+        for (row in rownames(lc480_data_sample[lc480_data_sample$assay == curr_assay, ])) {
+            
+            sam <- strsplit(lc480_data_sample[row, "Sample"], "_")[[1]]
+            if ("ITC" %in% sam) {
+                cq <- lc480_data_sample[row, "Cq"]
+                cqs <- c(cqs, cq)
+            }
         }
+        print(paste0("average ITC sample's Cq for ", curr_assay, ": ", mean(cqs)))
+        new_cq_df <- data.frame(assay=curr_assay, cleaned=FALSE, Cq_mean=mean(cqs))
+        cq_df <- rbind(cq_df, new_cq_df)
     }
-    print(paste0("average ITC sample's Cp for ", curr_assay, ": ", mean(cps)))
-    new_cp_df <- data.frame(assay=curr_assay, cleaned=FALSE, Cp_mean=mean(cps))
-    cp_df <- rbind(cp_df, new_cp_df)
-}
-
-clean_cp_df <- data.frame(assay=character(), cleaned=logical(), Cp_mean=numeric())
-for (curr_assay in assays) {
-    cps <- c()
-    for (row in rownames(clean_lc480_data[clean_lc480_data$assay == curr_assay, ])) {
-        
-        sam <- strsplit(clean_lc480_data[row, "SAMP_NAME"][[1]], "_")[[1]]
-        if ("ITC" %in% sam) {
-            cp <- clean_lc480_data[row, "cp"]
-            cps <- c(cps, cp[[1]])
+    
+    clean_cq_df <- data.frame(assay=character(), cleaned=logical(), Cq_mean=numeric())
+    for (curr_assay in assays) {
+        cqs <- c()
+        for (row in rownames(clean_lc480_data[clean_lc480_data$assay == curr_assay, ])) {
+            
+            sam <- strsplit(clean_lc480_data[row, "Sample"][[1]], "_")[[1]]
+            if ("ITC" %in% sam) {
+                cq <- clean_lc480_data[row, "Cq"]
+                cqs <- c(cqs, cq[[1]])
+            }
         }
+        print(paste0("average ITC sample's Cq for ", curr_assay, ": ", mean(cqs)))
+        new_cq_df <- data.frame(assay=curr_assay, cleaned=TRUE, Cq_mean=mean(cqs))
+        clean_cq_df <- rbind(clean_cq_df, new_cq_df)
     }
-    print(paste0("average ITC sample's Cp for ", curr_assay, ": ", mean(cps)))
-    new_cp_df <- data.frame(assay=curr_assay, cleaned=TRUE, Cp_mean=mean(cps))
-    clean_cp_df <- rbind(clean_cp_df, new_cp_df)
+    
+    final_cq_df <- rbind(cq_df, clean_cq_df)
+    
+    write.csv(discarded_samples, file = paste0(output_dir, "discarded_samples.csv"), row.names = FALSE)
+    write.csv(final_cq_df, file = paste0(output_dir, "average_Cq_ITCs.csv"), row.names = FALSE)
+    
+} else {
+    cp_df <- data.frame(assay=character(), cleaned=logical(), Cp_mean=numeric())
+    for (curr_assay in assays) {
+        cps <- c()
+        for (row in rownames(lc480_data_sample[lc480_data_sample$assay == curr_assay, ])) {
+            
+            sam <- strsplit(lc480_data_sample[row, "SAMP_NAME"], "_")[[1]]
+            if ("ITC" %in% sam) {
+                cp <- lc480_data_sample[row, "cp"]
+                cps <- c(cps, cp)
+            }
+        }
+        print(paste0("average ITC sample's Cp for ", curr_assay, ": ", mean(cps)))
+        new_cp_df <- data.frame(assay=curr_assay, cleaned=FALSE, Cp_mean=mean(cps))
+        cp_df <- rbind(cp_df, new_cp_df)
+    }
+    
+    clean_cp_df <- data.frame(assay=character(), cleaned=logical(), Cp_mean=numeric())
+    for (curr_assay in assays) {
+        cps <- c()
+        for (row in rownames(clean_lc480_data[clean_lc480_data$assay == curr_assay, ])) {
+            
+            sam <- strsplit(clean_lc480_data[row, "SAMP_NAME"][[1]], "_")[[1]]
+            if ("ITC" %in% sam) {
+                cp <- clean_lc480_data[row, "cp"]
+                cps <- c(cps, cp[[1]])
+            }
+        }
+        print(paste0("average ITC sample's Cp for ", curr_assay, ": ", mean(cps)))
+        new_cp_df <- data.frame(assay=curr_assay, cleaned=TRUE, Cp_mean=mean(cps))
+        clean_cp_df <- rbind(clean_cp_df, new_cp_df)
+    }
+    
+    final_cp_df <- rbind(cp_df, clean_cp_df)
+    
+    write.csv(discarded_samples, file = paste0(output_dir, "discarded_samples.csv"), row.names = FALSE)
+    write.csv(final_cp_df, file = paste0(output_dir, "average_Cp_ITCs.csv"), row.names = FALSE)
 }
-
-final_cp_df <- rbind(cp_df, clean_cp_df)
-
-write.csv(discarded_samples, file = paste0(output_dir, "discarded_samples.csv"), row.names = FALSE)
-write.csv(final_cp_df, file = paste0(output_dir, "average_Cp_ITCs.csv"), row.names = FALSE)
