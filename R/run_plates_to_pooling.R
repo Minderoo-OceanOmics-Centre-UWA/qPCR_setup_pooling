@@ -1015,7 +1015,7 @@ if (QS7) {
     rep_failed <- lc480_data_sample %>%
         mutate(
             discard = case_when(
-                (Delta.Rn < 2) | (Cq > 40) ~ "DISCARD",
+                (Delta.Rn < 5000) | (Cq > 40) ~ "DISCARD",
                 TRUE ~ "KEEP"
             )
         ) %>%
@@ -1024,8 +1024,8 @@ if (QS7) {
     # Flag samples with epf between 2 and 5
     rep_failed <- rep_failed %>%
         mutate(
-            delta_rn_2_to_5 = case_when(
-                (Delta.Rn >= 2) & (Delta.Rn <= 5) ~ TRUE,
+            delta_rn_5000_to_100000 = case_when(
+                (Delta.Rn >= 5000) & (Delta.Rn <= 100000) ~ TRUE,
                 TRUE ~ FALSE
             )
         ) %>%
@@ -1148,14 +1148,14 @@ print_failed_rep_message(rep_failed_summary, assays)
 discard_df <- print(rep_failed[rep_failed$discard == "DISCARD", ])
 
 # print the reps with epf between 2 to 5  
-if (QS7) print(rep_failed[rep_failed$delta_rn_2_to_5 == TRUE, ]) else print(rep_failed[rep_failed$epf_2_to_5 == TRUE, ])
+if (QS7) print(rep_failed[rep_failed$delta_rn_5000_to_100000 == TRUE, ]) else print(rep_failed[rep_failed$epf_2_to_5 == TRUE, ])
 
 # print reps with tm1 outside of standard deviation
 print(rep_failed[rep_failed$tm1_outside_sd == TRUE, ])
 
 # Print all the bad reps
 if (QS7) {
-    print(rep_failed[(rep_failed$tm1_outside_sd == TRUE | rep_failed$delta_rn_2_to_5 == TRUE | rep_failed$discard == "DISCARD"), ]) 
+    print(rep_failed[(rep_failed$tm1_outside_sd == TRUE | rep_failed$delta_rn_5000_to_100000 == TRUE | rep_failed$discard == "DISCARD"), ]) 
 } else { 
     print(rep_failed[(rep_failed$tm1_outside_sd == TRUE | rep_failed$epf_2_to_5 == TRUE | rep_failed$discard == "DISCARD") & rep_failed$sample_type == "sample", ])
 }
@@ -1166,7 +1166,7 @@ if (QS7) {
 ##########################################################
 
 if (QS7) {
-    write.csv(row.names = FALSE, rep_failed[(rep_failed$tm1_outside_sd == TRUE | rep_failed$delta_rn_2_to_5 == TRUE | rep_failed$discard == "DISCARD"), ], paste0(output_dir, "rxns_to_check", suffix, ".csv"))
+    write.csv(row.names = FALSE, rep_failed[(rep_failed$tm1_outside_sd == TRUE | rep_failed$delta_rn_5000_to_100000 == TRUE | rep_failed$discard == "DISCARD"), ], paste0(output_dir, "rxns_to_check", suffix, ".csv"))
 } else {
     write.csv(row.names = FALSE, rep_failed[(rep_failed$tm1_outside_sd == TRUE | rep_failed$epf_2_to_5 == TRUE | rep_failed$discard == "DISCARD") & rep_failed$sample_type == "sample", ], paste0(output_dir, "rxns_to_check", suffix, ".csv"))
 }
@@ -1223,11 +1223,11 @@ if (QS7) {
 discard_df <- print(rep_failed[rep_failed$discard == "DISCARD", ]) 
 
 # print the reps with epf between 2 to 5   
-if (QS7) print(rep_failed[rep_failed$delta_rn_2_to_5 == TRUE, ]) else print(rep_failed[rep_failed$epf_2_to_5 == TRUE, ]) 
+if (QS7) print(rep_failed[rep_failed$delta_rn_5000_to_100000 == TRUE, ]) else print(rep_failed[rep_failed$epf_2_to_5 == TRUE, ]) 
 # print reps with tm1 outside of standard deviation 
 print(rep_failed[rep_failed$tm1_outside_sd == TRUE, ]) 
 # Print all the bad reps 
-if (QS7) print(rep_failed[(rep_failed$tm1_outside_sd == TRUE | rep_failed$delta_rn_2_to_5 == TRUE | rep_failed$discard == "DISCARD"), ]) else
+if (QS7) print(rep_failed[(rep_failed$tm1_outside_sd == TRUE | rep_failed$delta_rn_5000_to_100000 == TRUE | rep_failed$discard == "DISCARD"), ]) else
     print(rep_failed[(rep_failed$tm1_outside_sd == TRUE | rep_failed$epf_2_to_5 == TRUE | rep_failed$discard == "DISCARD") & rep_failed$sample_type == "sample", ])
 
 
