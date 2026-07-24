@@ -47,6 +47,8 @@ There is a template file in the R folder called `run_meta_to_plates.R` that can 
 
 ## run_concat_qPCR_data.R
 
+This is not needed if you have Quant Studio 7 data
+
 ### Running run_concat_qPCR_data
 
 These are the variables you may need to change in the `run_concat_qPCR_data.R` script:
@@ -77,7 +79,7 @@ This is the minimum arguments required to run the meta_to_plates() function:
 source("R/meta_to_plates.R")
 metadata    <- "path/to/metadata.xlsx"
 index_file  <- "path/to/indexes.xlsx"
-output_file <- "path/to/output.xlsx"
+output_dir  <- "path/to/dir/"
 assays      <- c("16S", "MiFish")
 
 meta_to_plates(
@@ -95,7 +97,7 @@ This is all the arguments that can be used when running the meta_to_plates() fun
 ```{R}
 metadata        <- "path/to/metadata.xlsx"
 index_file      <- "path/to/indexes.xlsx"
-output_file     <- "path/to/output.xlsx"
+output_dir      <- "path/to/dir/"
 assays          <- c("16S", "MiFish")
 run             <- "run_1"
 plate_width     <- 12
@@ -111,6 +113,7 @@ skip_samples    <- list(
   "MiFish" = 0
 )
 strategy        <- "UC"
+prefix          <- ""
 
 meta_to_plates(
     input_file,
@@ -123,7 +126,8 @@ meta_to_plates(
     control_pattern,
     skip_plates,
     skip_samples,
-    strategy
+    strategy,
+    prefix
 )
 ```
 
@@ -141,6 +145,7 @@ meta_to_plates(
 - `skip_plates`: How many plates would you like to skip? Allows different values for each assay.
 - `skip_samples`: How many samples would you like to skip? Allows different values for each assay. Can be used with skip_plates (e.g., you can skip 2 plates and 10 samples).
 - `strategy`: Can be "UDI" for unique dual-index, or "UC" for unique combinatorial
+- `prefix`: This will be added as a prefix to your files
 
 ### meta_to_plates() input
 
@@ -164,7 +169,7 @@ The output Excel file will have four sheets; `plates`, `big_plates`, `metadata`,
 - `big_plates`: Will be bigger versions of the plates with 3 replicates and a pool replicate added to each sample.
 - `metadata`: Your samples will be duplicated for each assay. The metadata will now contain demultiplex, plate, and well information.
 - `position_df`: This will have your samples duplicated for each replicate in the big plates. This sheet is needed for the `run_plates_to_pooling()` script.
-- `samplesheet_${assay}`
+- `samplesheet_${assay}`: 
 
 ## plates_to_pooling() function
 
