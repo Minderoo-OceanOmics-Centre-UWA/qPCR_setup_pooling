@@ -3,10 +3,13 @@ export_plates_to_excel <- function(assays,
                                    big_plates,
                                    meta_df,
                                    position_df,
-                                   output_file,
+                                   output_dir,
                                    plate_height,
                                    plate_count,
-                                   strategy) {
+                                   strategy,
+                                   prefix) {
+    output_file <- paste0(output_dir, prefix, "_plates.xlsx")
+    
     # Create a workbook object
     wb <- createWorkbook()
 
