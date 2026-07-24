@@ -13,7 +13,7 @@ suppressMessages(library(plyr))
 
 meta_to_plates <- function(metadata,
                            index_file,
-                           output_file,
+                           output_dir,
                            assays,
                            run = "run1",
                            plate_width = 12,
@@ -22,7 +22,8 @@ meta_to_plates <- function(metadata,
                            control_pattern = "WC|DI|EB|BC|NTC|ITC|Cont|BL",
                            skip_plates = list(),
                            skip_samples = list(),
-                           strategy = "UDI") {
+                           strategy = "UDI",
+                           prefix = "") {
   
     # Make sure the plate_height is a valid number
     if (plate_height > 13) {
@@ -66,6 +67,12 @@ meta_to_plates <- function(metadata,
     fw_count              <- list()
     rv_count              <- list()
     skip_samples_param    <- skip_samples
+    
+    if (nchar(prefix) > 0) {
+        if (substring(prefix, nchar(prefix)) != "_") {
+            prefix <- paste0(prefix, "_")    
+        }
+    }
   
     for (assay in assays) {
         tmp_meta_df <- meta_df
@@ -280,7 +287,7 @@ meta_to_plates <- function(metadata,
     sams_to_colours <- setNames(sam_colours, sams)
     
     for (assay in assays) {
-        QS7_outfile <- paste0("QS7_plate_import_", assay, ".csv")
+        QS7_outfile <- paste0(output_dir, prefix, "_QS7_plate_import_", assay, ".csv")
         
         write("* Block Type = 384-Well Block", file = QS7_outfile)
         write(paste0("* Date Created = ", format(Sys.time(), "%a %b %d %H:%M:%S AWST %Y")), file = QS7_outfile, append = TRUE)
@@ -339,10 +346,11 @@ meta_to_plates <- function(metadata,
         big_plates,
         meta_df,
         position_df,
-        output_file,
+        output_dir,
         plate_height,
         plate_count,
-        strategy
+        strategy,
+        prefix
     )
 
     for (assay in assays) {
@@ -355,6 +363,6 @@ meta_to_plates <- function(metadata,
       biomek_out_csv$Dest_1 <- position_df[position_df$assay == assay & position_df$plate_number == paste0("Plate", last_plate) & position_df$replicate != "pool",]$Pos
       biomek_out_csv$ID <- ""
       
-      write.csv(biomek_out_csv, paste0(assay, "_biomek_MM_Plating.csv"), row.names = FALSE)
+      write.csv(biomek_out_csv, paste0(output_dir, prefix, "_", assay, "_biomek_MM_Plating.csv"), row.names = FALSE)
     }
 }
