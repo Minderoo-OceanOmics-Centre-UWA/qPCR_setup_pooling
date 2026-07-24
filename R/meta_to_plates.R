@@ -287,7 +287,7 @@ meta_to_plates <- function(metadata,
     sams_to_colours <- setNames(sam_colours, sams)
     
     for (assay in assays) {
-        QS7_outfile <- paste0(output_dir, prefix, "_QS7_plate_import_", assay, ".csv")
+        QS7_outfile <- paste0(output_dir, prefix, "QS7_plate_import_", assay, ".csv")
         
         write("* Block Type = 384-Well Block", file = QS7_outfile)
         write(paste0("* Date Created = ", format(Sys.time(), "%a %b %d %H:%M:%S AWST %Y")), file = QS7_outfile, append = TRUE)
