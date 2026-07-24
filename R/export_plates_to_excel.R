@@ -8,7 +8,7 @@ export_plates_to_excel <- function(assays,
                                    plate_count,
                                    strategy,
                                    prefix) {
-    output_file <- paste0(output_dir, prefix, "_plates.xlsx")
+    output_file <- paste0(output_dir, prefix, "plates.xlsx")
     
     # Create a workbook object
     wb <- createWorkbook()
