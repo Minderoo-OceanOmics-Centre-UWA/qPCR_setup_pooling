@@ -21,8 +21,8 @@ qpcr_dir     <- "input/qPCR_data/"
 output_dir   <- "output/"
 plate_width  <- 12
 plate_height <- 8
-assays       <- c("16SFishD", "MiFishU", "MiFishE2", "COILeray")
-suffix       <- ""
+assays       <- c("16SFishD", "MarVer1", "MiFishUE2")
+prefix       <- ""
 QS7          <- TRUE
 
 
@@ -229,9 +229,7 @@ export_plate_pdfs <- function(df,
                     output_dir,
                     "/",
                     prefix,
-                    "_",
                     curr_assay,
-                    suffix,
                     ".pdf"
                 )
             )
@@ -253,11 +251,9 @@ export_plate_pdfs <- function(df,
                         output_dir,
                         "/",
                         prefix,
-                        "_",
                         curr_assay,
                         "_",
                         curr_plate,
-                        suffix,
                         ".pdf"
                     )
                 )
@@ -478,7 +474,7 @@ export_biomek_pooling_workbook <- function(assays,
                     out_df <- rbind(out_df, tmp_df)
                 }
                 
-                pdf(paste0(output_dir, curr_key, suffix, "_minipool_plot.pdf"))
+                pdf(paste0(output_dir, "/", prefix, curr_key, "_minipool_plot.pdf"))
                 print(minipool_plots[curr_key])
                 dev.off()
             }
@@ -488,7 +484,7 @@ export_biomek_pooling_workbook <- function(assays,
     out_dfs[[book]]   <- out_df
     
     for (i in 1:book) {
-        write_csv(out_dfs[[i]], paste0(output_dir, "/biomek_pooling_workbook_", i, suffix, ".csv")) 
+        write_csv(out_dfs[[i]], paste0(output_dir, "/", prefix, "biomek_pooling_workbook_", i, ".csv")) 
     }
     
     print(paste0("Finished! Output files in: ", output_dir))
@@ -712,7 +708,7 @@ export_biomek_pooling_workbook_project_ver <- function(assays,
                         out_df <- rbind(out_df, tmp_df)
                     }
                     
-                    pdf(paste0(output_dir, curr_key, "_minipool_plot", suffix, ".pdf"))
+                    pdf(paste0(output_dir, "/", prefix, curr_key, "_minipool_plot", ".pdf"))
                     print(minipool_plots[curr_key])
                     dev.off()
                 }
@@ -724,7 +720,7 @@ export_biomek_pooling_workbook_project_ver <- function(assays,
     out_dfs[[book]]   <- out_df
     
     for (i in 1:book) {
-        write_csv(out_dfs[[i]], paste0(output_dir, "/biomek_pooling_workbook_", i, suffix, ".csv")) 
+        write_csv(out_dfs[[i]], paste0(output_dir, "/", prefix, "biomek_pooling_workbook_", i, ".csv")) 
     }
     
     print(paste0("Finished! Output files in: ", output_dir))
@@ -873,6 +869,12 @@ import_samplesheet_df <- function(excel_file, assay) {
 if (TRUE) {  
     options(dplyr.summarise.inform = FALSE)
     
+    if (nchar(prefix) > 0) {
+        if (substring(prefix, nchar(prefix)) != "_") {
+            prefix <- paste0(prefix, "_")    
+        }
+    }
+    
     # Make sure directory name doesn't already end in /
     while (endsWith(qpcr_dir, "/")) {
         qpcr_dir <- substr(qpcr_dir, 1, (nchar(qpcr_dir) - 1))
@@ -966,13 +968,13 @@ if (TRUE) {
 ##########################################################
 
 # visualise EPF data in a heatmap
-prefix <- "raw"
+curr_prefix <- paste0(prefix, "raw_")
 export_plate_pdfs(
     lc480_data_sample,
     plate_numbers,
     assays,
     output_dir,
-    prefix,
+    curr_prefix,
     plate_width,
     plate_height,
     QS7
@@ -1166,9 +1168,9 @@ if (QS7) {
 ##########################################################
 
 if (QS7) {
-    write.csv(row.names = FALSE, rep_failed[(rep_failed$tm1_outside_sd == TRUE | rep_failed$delta_rn_5000_to_100000 == TRUE | rep_failed$discard == "DISCARD"), ], paste0(output_dir, "rxns_to_check", suffix, ".csv"))
+    write.csv(row.names = FALSE, rep_failed[(rep_failed$tm1_outside_sd == TRUE | rep_failed$delta_rn_5000_to_100000 == TRUE | rep_failed$discard == "DISCARD"), ], paste0(output_dir, "/", prefix, "rxns_to_check.csv"))
 } else {
-    write.csv(row.names = FALSE, rep_failed[(rep_failed$tm1_outside_sd == TRUE | rep_failed$epf_2_to_5 == TRUE | rep_failed$discard == "DISCARD") & rep_failed$sample_type == "sample", ], paste0(output_dir, "rxns_to_check", suffix, ".csv"))
+    write.csv(row.names = FALSE, rep_failed[(rep_failed$tm1_outside_sd == TRUE | rep_failed$epf_2_to_5 == TRUE | rep_failed$discard == "DISCARD") & rep_failed$sample_type == "sample", ], paste0(output_dir, "/", prefix, "rxns_to_check", ".csv"))
 }
 
 
@@ -1176,7 +1178,7 @@ if (QS7) {
 # Import rxns_to_check.csv and merge discard column
 ######################################################
 
-checked_runs <- read.csv(paste0(output_dir, "rxns_to_check", suffix, ".csv"))
+checked_runs <- read.csv(paste0(output_dir, "/", prefix, "rxns_to_check", ".csv"))
 
 for (row in 1:nrow(checked_runs)) {
     id <- checked_runs[row, "assay_plate_number_pos"]
@@ -1201,7 +1203,7 @@ for (row in 1:nrow(checked_runs)) {
     rep_failed$discard[rep_failed$assay_plate_number_pos == id] <- disc
 }
 
-write.csv(row.names = FALSE, rep_failed, paste0(output_dir, "rxns_checked", suffix, ".csv"))
+write.csv(row.names = FALSE, rep_failed, paste0(output_dir, "/", prefix, "rxns_checked", ".csv"))
 
 # summary of number of reps to be discarded per sample 
 if (QS7) {
@@ -1280,7 +1282,7 @@ if (QS7) {
     }
 }
 
-write.csv(reps_to_discard, file = paste0(output_dir, "/reps_to_discard", suffix, ".csv"), row.names=FALSE, quote=FALSE)
+write.csv(reps_to_discard, file = paste0(output_dir, "/", prefix, "reps_to_discard.csv"), row.names=FALSE, quote=FALSE)
 
 
 ##########################################################
@@ -1299,13 +1301,13 @@ if (QS7) {
 
 
 ##### visualise clean EPF data in a heatmap ####
-prefix <- "clean"
+curr_prefix <- paste0(prefix, "clean_")
 export_plate_pdfs(
     clean_lc480_data,
     plate_numbers,
     assays,
     output_dir,
-    prefix,
+    curr_prefix,
     plate_width,
     plate_height,
     QS7
@@ -1464,7 +1466,7 @@ if ("project" %in% colnames(position_df_pool_filt)) {
 minipool_vols_df      <- do.call(rbind.data.frame, minipool_calc_vols)
 if (nrow(minipool_vols_df) == 0) {
     minipool_vols_summary <- minipool_vols_df
-    write_csv(minipool_vols_summary, paste0(output_dir, "/minipool_summary", suffix, ".csv"))
+    write_csv(minipool_vols_summary, paste0(output_dir, "/", prefix, "minipool_summary.csv"))
 } else {
     minipool_vols_summary <- minipool_vols_df %>%
         group_by(assay, plate_number, sample_type, DestinationWell) %>%
@@ -1474,7 +1476,7 @@ if (nrow(minipool_vols_df) == 0) {
         ungroup() %>%
         mutate(assay.plate_number.sample_type = paste(assay, plate_number, sample_type, sep = ".") )
     
-    write_csv(minipool_vols_summary, paste0(output_dir, "/minipool_summary", suffix, ".csv"))
+    write_csv(minipool_vols_summary, paste0(output_dir, "/", prefix, "minipool_summary.csv"))
 }
 
 #confirm final tube volumes do not exceed 1.5 mL (or 1500 uL)
@@ -1492,7 +1494,7 @@ for (assay in assays) {
         meta_df$discarded <- ifelse(meta_df$samp_name %in% curr_disc_sams$SAMP_NAME, TRUE, meta_df$discarded)
     }
     
-    write_csv(meta_df, paste0(output_dir, "/samplesheet_", assay, suffix, ".csv"))
+    write_csv(meta_df, paste0(output_dir, "/", prefix, "samplesheet_", assay, ".csv"))
 }
 
 
