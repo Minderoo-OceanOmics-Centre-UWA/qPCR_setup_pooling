@@ -169,7 +169,9 @@ The output Excel file will have four sheets; `plates`, `big_plates`, `metadata`,
 - `big_plates`: Will be bigger versions of the plates with 3 replicates and a pool replicate added to each sample.
 - `metadata`: Your samples will be duplicated for each assay. The metadata will now contain demultiplex, plate, and well information.
 - `position_df`: This will have your samples duplicated for each replicate in the big plates. This sheet is needed for the `run_plates_to_pooling()` script.
-- `samplesheet_${assay}`: 
+- `samplesheet_${assay}`: Your samplesheets.
+
+Your output directory will also have biomek_MM_plating csv files and QS7 plate import files
 
 ## plates_to_pooling() function
 
@@ -184,7 +186,7 @@ output_dir   <- "path/to/output/"
 plate_width  <- 12
 plate_height <- 8
 assay        <- c("16S", "MiFish")
-suffix       <- ""
+prefix       <- ""
 QS7          <- TRUE
 ```
 
@@ -196,7 +198,7 @@ QS7          <- TRUE
 - `plate_width`: The number of columns per plate. Default = 12. This should be the same value you used in meta_to_plates().
 - `plate_height`: The number of rows per plate. Default = 8. Max allowed = 13. This should be the same value you used in meta_to_plates().
 - `assay`: The assays that you're working with.
-- `suffix`: What suffix would you like for your file names.
+- `prefix`: What prefix would you like for your file names.
 - `QS7`: Set this to TRUE for QS7 mode, Set to FALSE for non-QS7 mode
 
 ### run_plates_to_pooling input
