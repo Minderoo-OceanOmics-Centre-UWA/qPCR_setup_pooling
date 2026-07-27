@@ -21,7 +21,7 @@ samples_to_skip <- list(
 meta_to_plates(
   metadata,
   index_file,
-  output_file,
+  output_dir,
   assays,
   skip_plates = plates_to_skip,
   skip_samples = samples_to_skip,
