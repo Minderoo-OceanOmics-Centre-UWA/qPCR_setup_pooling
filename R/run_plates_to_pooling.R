@@ -134,10 +134,14 @@ read_QS7_data <- function(fnames, assays) {
             basename(file)
         )
         description       <- strsplit(data$fileName, "_")
-        desc_count        <- length(description[[1]])
-        data$assay <- sapply(description, "[", desc_count)
+        for (i in description[[1]]) {
+            if (i %in% assays) {
+                curr_assay <- i
+            }
+        }
+
+        data$assay <- curr_assay
         
-        curr_assay <- unique(data$assay)
         if (! curr_assay %in% assays) {
             stop(
                 paste0(
@@ -170,7 +174,7 @@ read_QS7_data <- function(fnames, assays) {
             Cq    <- data[row, "Cq"]
             assay <- data[row, "assay"]
             
-            if (length(rownames(all_data[all_data$sample_replicate == sam_rep & all_data$assay == assay, ])) == 0) {
+            if (length(rownames(all_data[all_data$Well == well & all_data$assay == assay, ])) == 0) {
                 if (Cq == "UNDETERMINED") {
                     Cq <- NA
                 } else {
