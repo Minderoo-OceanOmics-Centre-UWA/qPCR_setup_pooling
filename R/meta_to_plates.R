@@ -22,7 +22,7 @@ meta_to_plates <- function(metadata,
                            control_pattern = "WC|DI|EB|BC|NTC|ITC|Cont|BL",
                            skip_plates = list(),
                            skip_samples = list(),
-                           strategy = "UDI",
+                           strategy = "UC",
                            prefix = "") {
   
     # Make sure the plate_height is a valid number
