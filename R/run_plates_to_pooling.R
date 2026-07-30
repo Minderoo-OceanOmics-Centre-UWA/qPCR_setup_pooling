@@ -22,8 +22,9 @@ output_dir   <- "output/"
 plate_width  <- 12
 plate_height <- 8
 assays       <- c("16SFishD", "MarVer1", "MiFishUE2")
-prefix       <- ""
-QS7          <- TRUE
+prefix       <- "" # Put your project ID here, this will be added as a prefix to file names
+input_file   <- paste0("output/", prefix, "_output_df.xlsx")
+QS7          <- TRUE # TRUE if using QuantStudio7, FALSE if using LightCycler
 
 
 ##########################################################
