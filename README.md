@@ -188,6 +188,7 @@ plate_height <- 8
 assay        <- c("16S", "MiFish")
 prefix       <- ""
 QS7          <- TRUE
+control_list <- c("WC", "FC", "DI", "EB", "BC", "NTC", "ITC", "Cont", "BL")
 ```
 
 ### run_plates_to_pooling variables
@@ -200,6 +201,7 @@ QS7          <- TRUE
 - `assay`: The assays that you're working with.
 - `prefix`: What prefix would you like for your file names.
 - `QS7`: Set this to TRUE for QS7 mode, Set to FALSE for non-QS7 mode
+- `control_list`: Any samples with any of these substrings will not be flagged for discarding
 
 ### run_plates_to_pooling input
 
