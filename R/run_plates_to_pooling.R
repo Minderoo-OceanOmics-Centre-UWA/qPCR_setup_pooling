@@ -25,6 +25,7 @@ assays       <- c("16SFishD", "MarVer1", "MiFishUE2")
 prefix       <- "" # Put your project ID here, this will be added as a prefix to file names
 input_file   <- paste0("output/", prefix, "_output_df.xlsx")
 QS7          <- TRUE # TRUE if using QuantStudio7, FALSE if using LightCycler
+control_list <- c("WC", "FC", "DI", "EB", "BC", "NTC", "ITC", "Cont", "BL")
 
 
 ##########################################################
@@ -134,14 +135,10 @@ read_QS7_data <- function(fnames, assays) {
             basename(file)
         )
         description       <- strsplit(data$fileName, "_")
-        for (i in description[[1]]) {
-            if (i %in% assays) {
-                curr_assay <- i
-            }
-        }
-
-        data$assay <- curr_assay
+        desc_count        <- length(description[[1]])
+        data$assay <- sapply(description, "[", desc_count)
         
+        curr_assay <- unique(data$assay)
         if (! curr_assay %in% assays) {
             stop(
                 paste0(
@@ -174,7 +171,7 @@ read_QS7_data <- function(fnames, assays) {
             Cq    <- data[row, "Cq"]
             assay <- data[row, "assay"]
             
-            if (length(rownames(all_data[all_data$Well == well & all_data$assay == assay, ])) == 0) {
+            if (length(rownames(all_data[all_data$sample_replicate == sam_rep & all_data$Well == well & all_data$assay == assay, ])) == 0) {
                 if (Cq == "UNDETERMINED") {
                     Cq <- NA
                 } else {
@@ -207,9 +204,9 @@ read_QS7_data <- function(fnames, assays) {
                 }
             } else {
                 if (table_type == "delta") {
-                    all_data[all_data$sample_replicate == sam_rep & all_data$assay == assay, "Delta.Rn"] <- delta_rn
+                    all_data[all_data$sample_replicate == sam_rep & all_data$Well == well & all_data$assay == assay, "Delta.Rn"] <- delta_rn
                 } else {
-                    all_data[all_data$sample_replicate == sam_rep & all_data$assay == assay, "Tm1"]      <- tm1
+                    all_data[all_data$sample_replicate == sam_rep & all_data$Well == well & all_data$assay == assay, "Tm1"]      <- tm1
                 }
             }
         }
@@ -987,7 +984,7 @@ export_plate_pdfs(
 
 # The plots are outputed into the output_dir specified as .pdf but let's look at one of those plots in R studio. 
 if (QS7) {
-    plate_plot_delta_rn <- lc480_data_sample %>%
+    raw_plate_plot <- lc480_data_sample %>%
         filter(assay == "16SFishD") %>%
         plate_plot(
             position = Well,
@@ -996,9 +993,8 @@ if (QS7) {
             plate_size = (plate_width * 2) * (plate_height * 2),
             title = paste0(unique(.$assay))
         )
-    print(plate_plot_delta_rn)
 } else {
-    plate_plot_epf <- lc480_data_sample %>%
+    raw_plate_plot <- lc480_data_sample %>%
         filter(plate_number == "Plate2" & assay == "16S") %>%
         plate_plot(
             position = pos,
@@ -1007,8 +1003,8 @@ if (QS7) {
             plate_size = (plate_width * 2) * (plate_height * 2),
             title = paste0(unique(.$plate_number), " ", unique(.$assay))
         )
-    print(plate_plot_epf)  
 }
+print(raw_plate_plot)
 
 
 ##########################################################
@@ -1169,6 +1165,15 @@ if (QS7) {
 
 
 ##########################################################
+# Keep controls
+##########################################################
+
+pattern <- paste(control_list, collapse = "|")
+rep_failed <- rep_failed %>%
+    mutate(discard = if_else(grepl(pattern, Sample), "KEEP", discard))
+
+
+##########################################################
 # Output rxns_to_check.csv
 ##########################################################
 
@@ -1185,27 +1190,52 @@ if (QS7) {
 
 checked_runs <- read.csv(paste0(output_dir, "/", prefix, "rxns_to_check", ".csv"))
 
-for (row in 1:nrow(checked_runs)) {
-    id <- checked_runs[row, "assay_plate_number_pos"]
-    disc <- toupper(checked_runs[row, "discard"])
-    
-    if (disc != "KEEP" & disc != "DISCARD") {
-        while (TRUE) {
-            print(paste0("discard value of ", disc, " is not valid for ", id))
-            answer <- readline(prompt="Enter 1 to keep, or 2 to discard: ")
-            if (answer == 1) {
-                disc <- "KEEP"
-                break
-            } else if (answer == 2) {
-                disc <- "DISCARD"
-                break
-            } else {
-                print(paste0(answer, " is not a valid option"))
+if (QS7) {
+    for (row in 1:nrow(checked_runs)) {
+        id <- checked_runs[row, "Well"]
+        disc <- toupper(checked_runs[row, "discard"])
+        
+        if (disc != "KEEP" & disc != "DISCARD") {
+            while (TRUE) {
+                print(paste0("discard value of ", disc, " is not valid for ", id))
+                answer <- readline(prompt="Enter 1 to keep, or 2 to discard: ")
+                if (answer == 1) {
+                    disc <- "KEEP"
+                    break
+                } else if (answer == 2) {
+                    disc <- "DISCARD"
+                    break
+                } else {
+                    print(paste0(answer, " is not a valid option"))
+                }
             }
         }
+        
+        rep_failed$discard[rep_failed$Well == id] <- disc
     }
-    
-    rep_failed$discard[rep_failed$assay_plate_number_pos == id] <- disc
+} else {
+    for (row in 1:nrow(checked_runs)) {
+        id <- checked_runs[row, "assay_plate_number_pos"]
+        disc <- toupper(checked_runs[row, "discard"])
+        
+        if (disc != "KEEP" & disc != "DISCARD") {
+            while (TRUE) {
+                print(paste0("discard value of ", disc, " is not valid for ", id))
+                answer <- readline(prompt="Enter 1 to keep, or 2 to discard: ")
+                if (answer == 1) {
+                    disc <- "KEEP"
+                    break
+                } else if (answer == 2) {
+                    disc <- "DISCARD"
+                    break
+                } else {
+                    print(paste0(answer, " is not a valid option"))
+                }
+            }
+        }
+        
+        rep_failed$discard[rep_failed$assay_plate_number_pos == id] <- disc
+    }
 }
 
 write.csv(row.names = FALSE, rep_failed, paste0(output_dir, "/", prefix, "rxns_checked", ".csv"))
@@ -1320,7 +1350,7 @@ export_plate_pdfs(
 
 # Let's look at one of those plots in R studio
 if (QS7) {
-    clean_plate_plot_epf <- clean_lc480_data %>%
+    clean_plate_plot <- clean_lc480_data %>%
         filter(assay == "16SFishD") %>%
         plate_plot(
             position = Well,
@@ -1329,9 +1359,8 @@ if (QS7) {
             plate_size = (plate_width * 2) * (plate_height * 2),
             title = paste0(unique(.$assay))
         )
-    print(clean_plate_plot_epf)
 } else {
-    clean_plate_plot_epf <- clean_lc480_data %>%
+    clean_plate_plot <- clean_lc480_data %>%
         filter(plate_number == "Plate5" & assay == "16SFishD") %>%
         plate_plot(
             position = pos,
@@ -1340,8 +1369,8 @@ if (QS7) {
             plate_size = (plate_width * 2) * (plate_height * 2),
             title = paste0(unique(.$plate_number), " ", unique(.$assay))
         )
-    print(clean_plate_plot_epf)
 }
+print(clean_plate_plot)
 
 
 ##########################################################
@@ -1583,3 +1612,4 @@ if (QS7) {
     write.csv(discarded_samples, file = paste0(output_dir, "discarded_samples.csv"), row.names = FALSE)
     write.csv(final_cp_df, file = paste0(output_dir, "average_Cp_ITCs.csv"), row.names = FALSE)
 }
+
