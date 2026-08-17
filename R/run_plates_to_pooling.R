@@ -1211,7 +1211,7 @@ if (QS7) {
             }
         }
         
-        rep_failed$discard[rep_failed$Well == id] <- disc
+        rep_failed$discard[rep_failed$Well == id & rep_failed$assay == assay] <- disc
     }
 } else {
     for (row in 1:nrow(checked_runs)) {
