@@ -137,7 +137,7 @@ meta_to_plates(
 - `input_file`: A path to an Excel file in the format explained below in the 'meta_to_plates() input' section.
 - `output_file`: The path for your output Excel file.
 - `assays`: A vector of assays. These should match the assay names found in the index file.
-- `run`: The name of the run. This should match the 'sequencing_run' name found in the metadata. Samples will only be used if they match the 'run'. This feature won't be used if the metadata doesn't have a 'sequencing_run' column.
+- `run`: The name of the run. This should match the 'sequencingrun' name found in the metadata. Samples will only be used if they match the 'run'. This feature won't be used if the metadata doesn't have a 'sequencingrun' column.
 - `plate_width`: The number of columns per plate. Default = 12.
 - `plate_height`: The number of rows per plate. Default = 8. Max allowed = 13.
 - `controls`: A vector of control samples that will be added at the end of each plate. Default = c("NTC", "ITC").
