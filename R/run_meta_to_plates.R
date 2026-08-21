@@ -23,6 +23,7 @@ meta_to_plates(
   index_file,
   output_dir,
   assays,
+  run = "run1", # only works if you have a column called sequencingrun
   skip_plates = plates_to_skip,
   skip_samples = samples_to_skip,
   strategy = "UC",
