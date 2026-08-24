@@ -320,15 +320,21 @@ meta_to_plates <- function(metadata,
         filled_positions <- position_df[position_df$replicate != "pool", "Pos"]
         
         for (pos in filled_positions) {
-            row_QS7 = trimws(position_df_QS7[position_df_QS7["Well Position"] == pos][1])
-            row_pdf = rownames(position_df[position_df$Pos == pos & position_df$assay == assay, ])
-        
-            position_df_QS7[row_QS7, "Sample Name"] <- position_df[row_pdf, "sample_id"]
-            position_df_QS7[row_QS7, "Sample Color"] <- sams_to_colours[position_df[row_pdf, "sample_id"]]
-            position_df_QS7[row_QS7, "Target Name"] <- assay
-            position_df_QS7[row_QS7, "Target Color"] <- "RGB(86,214,243)"
-            position_df_QS7[row_QS7, "Task"] <- "UNKNOWN"
-            position_df_QS7[row_QS7, "Reporter"] <- "SYBR"
+            p_count <- plate_count[assay]
+            for (p in 1:p_count[[1]]) {
+                plate <- paste0("Plate", p)
+                row_QS7 = trimws(position_df_QS7[position_df_QS7["Well Position"] == pos][1])
+                row_pdf = rownames(position_df[position_df$Pos == pos & position_df$assay == assay & position_df$plate_number == plate, ])
+                
+                if (! is_empty(row_pdf)) {
+                    position_df_QS7[row_QS7, "Sample Name"] <- position_df[row_pdf, "sample_id"]
+                    position_df_QS7[row_QS7, "Sample Color"] <- sams_to_colours[position_df[row_pdf, "sample_id"]]
+                    position_df_QS7[row_QS7, "Target Name"] <- assay
+                    position_df_QS7[row_QS7, "Target Color"] <- "RGB(86,214,243)"
+                    position_df_QS7[row_QS7, "Task"] <- "UNKNOWN"
+                    position_df_QS7[row_QS7, "Reporter"] <- "SYBR"
+                }
+            }
         }
         write.table(position_df_QS7, QS7_outfile, 
                     append = TRUE, 
