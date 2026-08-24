@@ -1194,6 +1194,7 @@ if (QS7) {
     for (row in 1:nrow(checked_runs)) {
         id <- checked_runs[row, "Well"]
         disc <- toupper(checked_runs[row, "discard"])
+        assay <- checked_runs[row, "assay"]
         
         if (disc != "KEEP" & disc != "DISCARD") {
             while (TRUE) {
