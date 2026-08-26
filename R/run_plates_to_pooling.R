@@ -1288,7 +1288,7 @@ if (QS7) {
         reps_to_discard <- reps_to_discard %>%
             arrange(sample_order(Well))
         
-        reps_to_discard$samp_name <- substr(reps_to_discard$sample_replicate, 1, nchar(reps_to_discard$sample_replicate)-2)
+        reps_to_discard$samp_name <- reps_to_discard$sample_replicate
         
         # Keep only rows where the sample is not duplicated
         duplicated_rows <- duplicated(reps_to_discard[c("assay", "samp_name")]) | duplicated(reps_to_discard[c("assay", "samp_name")], fromLast = TRUE)
