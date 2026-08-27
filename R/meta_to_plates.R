@@ -236,7 +236,6 @@ meta_to_plates <- function(metadata,
     position_df <- position_df %>%
       filter(!grepl("^FAKESAMPLE_", sample_id))
     
-    ### NEW CODE
     num_rows <- 384
     well_chars <- c("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P")
     well_nums <- c(1:24)
@@ -343,8 +342,6 @@ meta_to_plates <- function(metadata,
                     col.names = TRUE)
     }
     
-    ### NEW CODE END
-    
 
     export_plates_to_excel(
         assays,
@@ -356,7 +353,8 @@ meta_to_plates <- function(metadata,
         plate_height,
         plate_count,
         strategy,
-        prefix
+        prefix,
+        projects
     )
 
     for (assay in assays) {
