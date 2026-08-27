@@ -3,7 +3,13 @@ metadata    <- "test_data/input/AB_V12_V9_metadata.xlsx" # Use a vector of paths
 index_file  <- "input/index_Template.xlsx"
 output_dir  <- "output/"
 assays      <- c("16SFishD", "MarVer1", "MiFishUE2")
-prefix      <- "" # Put your project ID here, this will be added as a prefix to file names
+
+prefix <- c()
+for (i in metadata) {
+    i <- basename(i)
+    i <- paste0(strsplit(i , "_")[[1]][1], "_", strsplit(i , "_")[[1]][2])
+    prefix <- c(prefix, i)
+}
 
 plates_to_skip <- list(
   "16SFishD" = 0,
