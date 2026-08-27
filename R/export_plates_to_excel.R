@@ -8,7 +8,8 @@ export_plates_to_excel <- function(assays,
                                    plate_count,
                                    strategy,
                                    prefix) {
-    output_file <- paste0(output_dir, prefix, "output_df.xlsx")
+    output_file <- paste0(output_dir, paste0(prefix, collapse = ""), "plates.xlsx")
+    
     
     # Create a workbook object
     wb <- createWorkbook()
@@ -133,15 +134,27 @@ export_plates_to_excel <- function(assays,
     )
     
     for (assay in assays) {
-      addWorksheet(wb, paste0("samplesheet_", assay))
-      
-      writeData(
-        wb,
-        sheet = paste0("samplesheet_", assay),
-        meta_df[meta_df$assay == assay, ],
-        startRow = 1,
-        startCol = 1
-      )
+        for (project in projects) {
+            df <- meta_df[
+                (meta_df$assay == assay & meta_df$project == project) |
+                (meta_df$assay == assay & (meta_df$sample_type == "NTC_Control" | meta_df$sample_type == "ITC_Control"))
+                , ]
+            
+            df <- df %>% 
+                mutate(across(everything(), ~ as.numeric(str_remove_all(., ", "))))
+            
+            addWorksheet(wb, paste0("samplesheet_", project, "_", assay))
+            
+            writeData(
+                wb,
+                sheet = paste0("samplesheet_", project, "_", assay),
+                df,
+                startRow = 1,
+                startCol = 1
+            )
+            
+            write_csv(df, paste0(output_dir, project, "_", assay, "_samplesheet.csv"))
+        }
     }
 
     if ("project" %in% colnames(position_df)) {
