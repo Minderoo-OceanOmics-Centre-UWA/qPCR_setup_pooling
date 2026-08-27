@@ -41,7 +41,11 @@ meta_to_plates <- function(metadata,
     } else {
         meta_df <- data.frame() 
         for (file in metadata) {
+            file_split <- str_split(file, "_")[[1]]
+            num <- file_split[length(file_split) - 1]
+            project <- paste0("OcOm_", num)
             tmp_df  <- import_meta_df(file, run)
+            tmp_df$project <- project
             meta_df <- rbind(meta_df, tmp_df)
         }
     }
@@ -68,12 +72,28 @@ meta_to_plates <- function(metadata,
     rv_count              <- list()
     skip_samples_param    <- skip_samples
     
-    if (nchar(prefix) > 0) {
-        if (substring(prefix, nchar(prefix)) != "_") {
-            prefix <- paste0(prefix, "_")    
+    if (length(metadata) == 1) {
+        projects <- c(prefix)
+        if (nchar(prefix) > 0) {
+            if (substring(prefix, nchar(prefix)) != "_") {
+                prefix <- paste0(prefix, "_")    
+            }
         }
+    } else {
+        prefix_tmp <- c()
+        projects <- c()
+        for (p in prefix) {
+            if (nchar(p) > 0) {
+                if (substring(p, nchar(p)) != "_") {
+                    projects <- c(projects, p)
+                    p <- paste0(p, "_") 
+                    prefix_tmp <- c(prefix_tmp, p)
+                }
+            }
+        }
+        prefix <- prefix_tmp
     }
-  
+
     for (assay in assays) {
         tmp_meta_df <- meta_df
         sample_ids[assay] <- list(c())
@@ -236,6 +256,7 @@ meta_to_plates <- function(metadata,
     position_df <- position_df %>%
       filter(!grepl("^FAKESAMPLE_", sample_id))
     
+    ### NEW CODE
     num_rows <- 384
     well_chars <- c("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P")
     well_nums <- c(1:24)
@@ -286,61 +307,65 @@ meta_to_plates <- function(metadata,
     sams_to_colours <- setNames(sam_colours, sams)
     
     for (assay in assays) {
-        QS7_outfile <- paste0(output_dir, prefix, "QS7_plate_import_", assay, ".csv")
-        
-        write("* Block Type = 384-Well Block", file = QS7_outfile)
-        write(paste0("* Date Created = ", format(Sys.time(), "%a %b %d %H:%M:%S AWST %Y")), file = QS7_outfile, append = TRUE)
-        write("* Passive Reference = ", file = QS7_outfile, append = TRUE)
-        write("* Barcode = ?", file = QS7_outfile, append = TRUE)
-        write("", file = QS7_outfile, append = TRUE)
-        write("[Sample Setup]", file = QS7_outfile, append = TRUE)
-        
-        position_df_QS7 <- data.frame(
-            "Well" = numeric(num_rows),
-            "Well Position" = character(num_rows),
-            "Sample Name" = character(num_rows),
-            "Sample Color" = character(num_rows),
-            "Biogroup Name" = character(num_rows),
-            "Biogroup Color" = character(num_rows),
-            "Target Name" = character(num_rows),
-            "Target Color" = character(num_rows),
-            "Task" = character(num_rows),
-            "Reporter" = character(num_rows),
-            "Quencher" = character(num_rows),
-            "Quality" = character(num_rows),
-            "Quantity" = character(num_rows),
-            "Comments" = character(num_rows),
-            check.names = FALSE 
-        )
-        
-        position_df_QS7["Well"] <- c(1:384)
-        position_df_QS7["Well Position"] <- well_positions
-        
-        filled_positions <- position_df[position_df$replicate != "pool", "Pos"]
-        
-        for (pos in filled_positions) {
-            p_count <- plate_count[assay]
-            for (p in 1:p_count[[1]]) {
-                plate <- paste0("Plate", p)
-                row_QS7 = trimws(position_df_QS7[position_df_QS7["Well Position"] == pos][1])
-                row_pdf = rownames(position_df[position_df$Pos == pos & position_df$assay == assay & position_df$plate_number == plate, ])
-                
-                if (! is_empty(row_pdf)) {
-                    position_df_QS7[row_QS7, "Sample Name"] <- position_df[row_pdf, "sample_id"]
-                    position_df_QS7[row_QS7, "Sample Color"] <- sams_to_colours[position_df[row_pdf, "sample_id"]]
-                    position_df_QS7[row_QS7, "Target Name"] <- assay
-                    position_df_QS7[row_QS7, "Target Color"] <- "RGB(86,214,243)"
-                    position_df_QS7[row_QS7, "Task"] <- "UNKNOWN"
-                    position_df_QS7[row_QS7, "Reporter"] <- "SYBR"
+        for (pref in prefix) {
+            QS7_outfile <- paste0(output_dir, pref, "QS7_plate_import_", assay, ".csv")
+            
+            write("* Block Type = 384-Well Block", file = QS7_outfile)
+            write(paste0("* Date Created = ", format(Sys.time(), "%a %b %d %H:%M:%S AWST %Y")), file = QS7_outfile, append = TRUE)
+            write("* Passive Reference = ", file = QS7_outfile, append = TRUE)
+            write("* Barcode = ?", file = QS7_outfile, append = TRUE)
+            write("", file = QS7_outfile, append = TRUE)
+            write("[Sample Setup]", file = QS7_outfile, append = TRUE)
+            
+            position_df_QS7 <- data.frame(
+                "Well" = numeric(num_rows),
+                "Well Position" = character(num_rows),
+                "Sample Name" = character(num_rows),
+                "Sample Color" = character(num_rows),
+                "Biogroup Name" = character(num_rows),
+                "Biogroup Color" = character(num_rows),
+                "Target Name" = character(num_rows),
+                "Target Color" = character(num_rows),
+                "Task" = character(num_rows),
+                "Reporter" = character(num_rows),
+                "Quencher" = character(num_rows),
+                "Quality" = character(num_rows),
+                "Quantity" = character(num_rows),
+                "Comments" = character(num_rows),
+                check.names = FALSE 
+            )
+            
+            position_df_QS7["Well"] <- c(1:384)
+            position_df_QS7["Well Position"] <- well_positions
+            
+            filled_positions <- position_df[position_df$replicate != "pool", "Pos"]
+            
+            for (pos in filled_positions) {
+                p_count <- plate_count[assay]
+                for (p in 1:p_count[[1]]) {
+                    plate <- paste0("Plate", p)
+                    row_QS7 = trimws(position_df_QS7[position_df_QS7["Well Position"] == pos][1])
+                    row_pdf = rownames(position_df[position_df$Pos == pos & position_df$assay == assay & position_df$plate_number == plate, ])
+                    
+                    if (! is_empty(row_pdf)) {
+                        position_df_QS7[row_QS7, "Sample Name"] <- position_df[row_pdf, "sample_id"]
+                        position_df_QS7[row_QS7, "Sample Color"] <- sams_to_colours[position_df[row_pdf, "sample_id"]]
+                        position_df_QS7[row_QS7, "Target Name"] <- assay
+                        position_df_QS7[row_QS7, "Target Color"] <- "RGB(86,214,243)"
+                        position_df_QS7[row_QS7, "Task"] <- "UNKNOWN"
+                        position_df_QS7[row_QS7, "Reporter"] <- "SYBR"
+                    }
                 }
             }
+            write.table(position_df_QS7, QS7_outfile, 
+                        append = TRUE, 
+                        sep = ",", 
+                        row.names = FALSE, 
+                        col.names = TRUE)
         }
-        write.table(position_df_QS7, QS7_outfile, 
-                    append = TRUE, 
-                    sep = ",", 
-                    row.names = FALSE, 
-                    col.names = TRUE)
     }
+    
+    ### NEW CODE END
     
 
     export_plates_to_excel(
