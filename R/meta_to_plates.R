@@ -377,7 +377,8 @@ meta_to_plates <- function(metadata,
         plate_height,
         plate_count,
         strategy,
-        prefix
+        prefix,
+        projects
     )
 
     for (assay in assays) {
