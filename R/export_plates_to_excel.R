@@ -7,7 +7,8 @@ export_plates_to_excel <- function(assays,
                                    plate_height,
                                    plate_count,
                                    strategy,
-                                   prefix) {
+                                   prefix,
+                                   projects) {
     output_file <- paste0(output_dir, paste0(prefix, collapse = ""), "plates.xlsx")
     
     
