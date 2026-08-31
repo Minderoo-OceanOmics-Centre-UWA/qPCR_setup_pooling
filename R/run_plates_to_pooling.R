@@ -16,14 +16,13 @@ suppressMessages(library("tools"))
 # Variables
 ##########################################################
 
-input_file   <- "output/output_df.xlsx"
+prefix       <- "" # Put your project ID here, this will be added as a prefix to file names
 qpcr_dir     <- "input/qPCR_data/"
 output_dir   <- "output/"
 plate_width  <- 12
 plate_height <- 8
 assays       <- c("16SFishD", "MarVer1", "MiFishUE2")
-prefix       <- "" # Put your project ID here, this will be added as a prefix to file names
-input_file   <- paste0("output/", prefix, "_output_df.xlsx")
+input_file   <- paste0("output/", prefix, "_plates.xlsx")
 QS7          <- TRUE # TRUE if using QuantStudio7, FALSE if using LightCycler
 control_list <- c("WC", "FC", "DI", "EB", "BC", "NTC", "ITC", "Cont", "BL")
 
