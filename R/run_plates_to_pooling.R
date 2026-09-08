@@ -1542,7 +1542,7 @@ if (nrow(minipool_vols_df) == 0) {
 
 # Create samplesheets with info on discarded samples
 for (assay in assays) {
-    meta_df           <- import_samplesheet_df(input_file, assay)
+    meta_df           <- import_samplesheet_df(input_file, prefixs, assay)
     meta_df$discarded <- FALSE
     curr_disc_sams    <- discarded_samples[discarded_samples$assay == assay, ]
     
