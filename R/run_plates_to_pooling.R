@@ -1218,6 +1218,7 @@ if (QS7) {
         id <- checked_runs[row, "Well"]
         disc <- toupper(checked_runs[row, "discard"])
         assay <- checked_runs[row, "assay"]
+        sample <- checked_runs[row, "Sample"]
         
         if (disc != "KEEP" & disc != "DISCARD") {
             while (TRUE) {
@@ -1235,7 +1236,7 @@ if (QS7) {
             }
         }
         
-        rep_failed$discard[rep_failed$Well == id & rep_failed$assay == assay] <- disc
+        rep_failed$discard[rep_failed$Well == id & rep_failed$assay == assay & rep_failed$Sample == sample] <- disc
     }
 } else {
     for (row in 1:nrow(checked_runs)) {
