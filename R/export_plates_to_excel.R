@@ -133,27 +133,49 @@ export_plates_to_excel <- function(assays,
         startRow = 1,
         startCol = 1
     )
-    
-    for (assay in assays) {
-        for (project in projects) {
-            df <- meta_df[
-                (meta_df$assay == assay & meta_df$project == project) |
-                (meta_df$assay == assay & (meta_df$sample_type == "NTC_Control" | meta_df$sample_type == "ITC_Control"))
-                , ]
-            
+
+    if ("project" %in% colnames(meta_df)) {
+        for (assay in assays) {
+            for (project in projects) {
+                df <- meta_df[
+                    (meta_df$assay == assay & meta_df$project == project) |
+                    (meta_df$assay == assay & (meta_df$sample_type == "NTC_Control" | meta_df$sample_type == "ITC_Control"))
+                    , ]
+                
+                df <- df %>% 
+                    mutate(across(everything(), ~ as.numeric(str_remove_all(., ", "))))
+                
+                addWorksheet(wb, paste0("samplesheet_", project, "_", assay))
+                
+                writeData(
+                    wb,
+                    sheet = paste0("samplesheet_", project, "_", assay),
+                    df,
+                    startRow = 1,
+                    startCol = 1
+                )
+                
+                write_csv(df, paste0(output_dir, project, "_", assay, "_samplesheet.csv"))
+            }
+        }
+    } else {
+        project <- projects[1]
+        for (assay in assays) {
+            df <- meta_df[meta_df$assay == assay, ]
+                
             df <- df %>% 
                 mutate(across(everything(), ~ as.numeric(str_remove_all(., ", "))))
-            
-            addWorksheet(wb, paste0("samplesheet_", project, "_", assay))
-            
+                
+            addWorksheet(wb, paste0("samplesheet_", assay))
+                
             writeData(
                 wb,
-                sheet = paste0("samplesheet_", project, "_", assay),
+                sheet = paste0("samplesheet_", assay),
                 df,
                 startRow = 1,
                 startCol = 1
             )
-            
+                
             write_csv(df, paste0(output_dir, project, "_", assay, "_samplesheet.csv"))
         }
     }
