@@ -107,6 +107,7 @@ read_QS7_data <- function(fnames, assays) {
         Tm1 = numeric(),
         assay = character(),
         Delta.Rn = numeric(),
+        plate_number = character(),
         stringsAsFactors = FALSE  # Keeps character columns from converting to factors
     )
     first_file = TRUE
@@ -135,7 +136,9 @@ read_QS7_data <- function(fnames, assays) {
         )
         description       <- strsplit(data$fileName, "_")
         desc_count        <- length(description[[1]])
-        data$assay <- sapply(description, "[", desc_count)
+        data$assay        <- sapply(description, "[", desc_count)
+        data$plate_number <- sapply(description, "[", desc_count - 1)
+        p_number          <- data$plate_number[1]
         
         curr_assay <- unique(data$assay)
         if (! curr_assay %in% assays) {
@@ -185,6 +188,7 @@ read_QS7_data <- function(fnames, assays) {
                         Tm1 = NA,
                         assay = assay,
                         Delta.Rn = delta_rn,
+                        plate_number = p_number,
                         stringsAsFactors = FALSE
                     )
                     all_data <- rbind(all_data, new_row)
@@ -197,6 +201,7 @@ read_QS7_data <- function(fnames, assays) {
                         Tm1 = tm1,
                         assay = assay,
                         Delta.Rn = NA,
+                        plate_number = p_number,
                         stringsAsFactors = FALSE
                     )
                     all_data <- rbind(all_data, new_row)
