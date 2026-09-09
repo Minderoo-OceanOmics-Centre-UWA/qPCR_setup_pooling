@@ -136,8 +136,8 @@ read_QS7_data <- function(fnames, assays) {
         )
         description       <- strsplit(data$fileName, "_")
         desc_count        <- length(description[[1]])
-        data$assay        <- sapply(description, "[", desc_count)
-        data$plate_number <- sapply(description, "[", desc_count - 1)
+        data$assay        <- sapply(description, "[", desc_count - 1)
+        data$plate_number <- sapply(description, "[", desc_count)
         p_number          <- data$plate_number[1]
         
         curr_assay <- unique(data$assay)
