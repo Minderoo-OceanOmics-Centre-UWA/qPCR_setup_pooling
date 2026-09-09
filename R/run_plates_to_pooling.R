@@ -230,26 +230,28 @@ export_plate_pdfs <- function(df,
     
     for (curr_assay in assays) {
         if (QS7) {
-            pdf(
-                paste0(
-                    output_dir,
-                    "/",
-                    prefix,
-                    curr_assay,
-                    ".pdf"
+            for (curr_plate in plate_numbers[curr_assay][[1]]) {
+                pdf(
+                    paste0(
+                        output_dir,
+                        "/",
+                        prefix,
+                        curr_assay,
+                        ".pdf"
+                    )
                 )
-            )
-            plate_plot_delta_rn <- df %>%
-                filter(assay == curr_assay) %>%
-                plate_plot(
-                    position = Well,
-                    value = Delta.Rn,
-                    label = round(Delta.Rn, digits = 1),
-                    plate_size = (plate_width * 2) * (plate_height * 2),
-                    title = paste0(unique(.$assay))
-                )
-            print(plate_plot_delta_rn)
-            dev.off()
+                plate_plot_delta_rn <- df %>%
+                    filter(assay == curr_assay) %>%
+                    plate_plot(
+                        position = Well,
+                        value = Delta.Rn,
+                        label = round(Delta.Rn, digits = 1),
+                        plate_size = (plate_width * 2) * (plate_height * 2),
+                        title = paste0(unique(.$plate_number), " ", unique(.$assay))
+                    )
+                print(plate_plot_delta_rn)
+                dev.off()
+            }
         } else {
             for (curr_plate in plate_numbers[curr_assay][[1]]) {
                 pdf(
