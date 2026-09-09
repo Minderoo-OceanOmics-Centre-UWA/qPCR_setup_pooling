@@ -1310,12 +1310,12 @@ if (QS7) {
     
     # export table for manual removal of failed replicates from 384-well plates
     reps_to_discard <- rep_failed %>%
-        dplyr::select(assay, Well, sample_replicate, discard) %>%
+        dplyr::select(assay, plate_number, Well, sample_replicate, discard) %>%
         filter(discard == "DISCARD")
     
     if (nrow(reps_to_discard) != 0) {
         reps_to_discard <- reps_to_discard %>%
-            arrange(sample_order(Well))
+            arrange(plate_number, sample_order(Well))
         
         reps_to_discard$samp_name <- reps_to_discard$sample_replicate
         
