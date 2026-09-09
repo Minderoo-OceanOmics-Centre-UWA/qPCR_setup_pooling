@@ -1015,13 +1015,13 @@ export_plate_pdfs(
 # The plots are outputed into the output_dir specified as .pdf but let's look at one of those plots in R studio. 
 if (QS7) {
     raw_plate_plot <- lc480_data_sample %>%
-        filter(assay == "16SFishD") %>%
+        filter(plate_number == "Plate2" & assay == "MarVer1") %>%
         plate_plot(
             position = Well,
             value = Delta.Rn,
             label = round(Delta.Rn, digits = 1),
             plate_size = (plate_width * 2) * (plate_height * 2),
-            title = paste0(unique(.$assay))
+            title = paste0(unique(.$plate_number), " ", unique(.$assay))
         )
 } else {
     raw_plate_plot <- lc480_data_sample %>%
@@ -1385,13 +1385,13 @@ export_plate_pdfs(
 # Let's look at one of those plots in R studio
 if (QS7) {
     clean_plate_plot <- clean_lc480_data %>%
-        filter(assay == "16SFishD") %>%
+        filter(plate_number == "Plate5" & assay == "MarVer1") %>%
         plate_plot(
             position = Well,
             value = Delta.Rn,
             label = round(Delta.Rn, digits = 1),
             plate_size = (plate_width * 2) * (plate_height * 2),
-            title = paste0(unique(.$assay))
+            title = paste0(unique(.$plate_number), " ", unique(.$assay))
         )
 } else {
     clean_plate_plot <- clean_lc480_data %>%
