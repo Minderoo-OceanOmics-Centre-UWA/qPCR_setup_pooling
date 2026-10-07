@@ -9,7 +9,8 @@ reformat_meta_df <- function(meta_df,
                              plate_width,
                              run,
                              sample_ids,
-                             strategy) {
+                             strategy,
+                             prefix) {
 
     control_count <- length(controls)
     sample_count_per_plate <- (plate_height * plate_width) - control_count
@@ -348,6 +349,31 @@ reformat_meta_df <- function(meta_df,
                 meta_df[meta_row, "plate"]       <- plate_num
                 meta_df[meta_row, "well"]        <- well
             }
+        }
+    }
+    
+    meta_df$use_for_filter <- FALSE
+    
+    for (sam in meta_df$samp_name) {
+        sam_split <- strsplit(sam, "_")[[1]]
+        site <- sam_split[length(sam_split) - 1]
+        if (site == "EB") {
+            meta_df[meta_df$samp_name == sam, "use_for_filter"] <- TRUE
+        } else if (site == "NTC") {
+            meta_df[meta_df$samp_name == sam, "use_for_filter"] <- TRUE
+            meta_df[meta_df$samp_name == sam, "samp_category"] <- "negative control"
+            meta_df[meta_df$samp_name == sam, "neg_cont_type"] <- "PCR negative"
+            meta_df[meta_df$samp_name == sam, "decimalLongitude"] <- "not applicable: control sample"
+            meta_df[meta_df$samp_name == sam, "decimalLatitude"] <- "not applicable: control sample"
+            meta_df[meta_df$samp_name == sam, "geo_loc_name"] <- "not applicable: control sample"
+            meta_df[meta_df$samp_name == sam, "eventDate"] <- "not applicable: control sample"
+        } else if (site == "ITC") {
+            meta_df[meta_df$samp_name == sam, "samp_category"] <- "positive control"
+            meta_df[meta_df$samp_name == sam, "pos_cont_type"] <- "PCR positive"
+            meta_df[meta_df$samp_name == sam, "decimalLongitude"] <- "not applicable: control sample"
+            meta_df[meta_df$samp_name == sam, "decimalLatitude"] <- "not applicable: control sample"
+            meta_df[meta_df$samp_name == sam, "geo_loc_name"] <- "not applicable: control sample"
+            meta_df[meta_df$samp_name == sam, "eventDate"] <- "not applicable: control sample"
         }
     }
 
