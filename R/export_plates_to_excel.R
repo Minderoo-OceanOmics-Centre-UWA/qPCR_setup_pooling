@@ -121,9 +121,9 @@ export_plates_to_excel <- function(assays,
     colnames(meta_df)[colnames(meta_df) == 'fw_tag'] <- 'fw_index'
     colnames(meta_df)[colnames(meta_df) == 'rv_tag'] <- 'rv_index'
   
-    for (i in 1:length(colnames(meta_df))) {
-      colnames(meta_df)[i] = tolower(colnames(meta_df)[i])
-    }
+    #for (i in 1:length(colnames(meta_df))) {
+    #  colnames(meta_df)[i] = tolower(colnames(meta_df)[i])
+    #}
     meta_df$fastq_1 <- NA
     meta_df$fastq_2 <- NA
     writeData(
@@ -155,7 +155,7 @@ export_plates_to_excel <- function(assays,
                     startCol = 1
                 )
                 
-                write_csv(df, paste0(output_dir, project, "_", assay, "_samplesheet.csv"))
+    #            write_csv(df, paste0(output_dir, project, "_", assay, "_samplesheet.csv"))
             }
         }
     } else {
@@ -176,7 +176,7 @@ export_plates_to_excel <- function(assays,
                 startCol = 1
             )
                 
-            write_csv(df, paste0(output_dir, project, "_", assay, "_samplesheet.csv"))
+    #        write_csv(df, paste0(output_dir, project, "_", assay, "_samplesheet.csv"))
         }
     }
 
