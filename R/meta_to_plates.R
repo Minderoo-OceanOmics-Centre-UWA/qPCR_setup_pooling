@@ -171,7 +171,8 @@ meta_to_plates <- function(metadata,
         plate_width,
         run,
         sample_ids,
-        strategy
+        strategy,
+        prefix
     )
 
     position_df <- create_position_df(
@@ -393,6 +394,7 @@ meta_to_plates <- function(metadata,
       biomek_out_csv$Dest_1 <- position_df[position_df$assay == assay & position_df$plate_number == paste0("Plate", last_plate) & position_df$replicate != "pool",]$Pos
       biomek_out_csv$ID <- ""
       
-      write.csv(biomek_out_csv, paste0(output_dir, prefix, "_", assay, "_biomek_MM_Plating.csv"), row.names = FALSE)
+      write.csv(biomek_out_csv, paste0(output_dir, prefix, assay, "_biomek_MM_Plating.csv"), row.names = FALSE)
     }
 }
+
