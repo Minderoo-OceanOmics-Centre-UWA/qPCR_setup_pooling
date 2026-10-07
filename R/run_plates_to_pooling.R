@@ -1015,7 +1015,7 @@ export_plate_pdfs(
 # The plots are outputed into the output_dir specified as .pdf but let's look at one of those plots in R studio. 
 if (QS7) {
     raw_plate_plot <- lc480_data_sample %>%
-        filter(plate_number == "Plate2" & assay == "MarVer1") %>%
+        filter(plate_number == "Plate12" & assay == "MarVer1") %>%
         plate_plot(
             position = Well,
             value = Delta.Rn,
@@ -1385,7 +1385,7 @@ export_plate_pdfs(
 # Let's look at one of those plots in R studio
 if (QS7) {
     clean_plate_plot <- clean_lc480_data %>%
-        filter(plate_number == "Plate5" & assay == "MarVer1") %>%
+        filter(plate_number == "Plate12" & assay == "MarVer1") %>%
         plate_plot(
             position = Well,
             value = Delta.Rn,
