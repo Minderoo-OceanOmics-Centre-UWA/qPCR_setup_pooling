@@ -140,7 +140,7 @@ reformat_meta_df <- function(meta_df,
                 paste0(
                   "You need at least ",
                   fw_count[curr_assay][[1]],
-                  " fw primers. Only found ",
+                  " fw tags. Only found ",
                   length(fw_primers)
                 )
               )
@@ -150,7 +150,7 @@ reformat_meta_df <- function(meta_df,
                 paste0(
                   "You need at least ",
                   rv_count[curr_assay][[1]],
-                  " rv primers. Only found ",
+                  " rv tags. Only found ",
                   length(rv_primers)
                 )
               )
@@ -269,7 +269,7 @@ reformat_meta_df <- function(meta_df,
                     paste0(
                         "You need at least ",
                         num_of_sams,
-                        " fw primers. Only found ",
+                        " fw tags. Only found ",
                         length(index_df[index_df$fw_rv == "fw" & index_df$assay == curr_assay, "primer_num"])
                     )
                 )
@@ -279,7 +279,7 @@ reformat_meta_df <- function(meta_df,
                     paste0(
                         "You need at least ",
                         num_of_sams,
-                        " rv primers. Only found ",
+                        " rv tags. Only found ",
                         length(index_df[index_df$fw_rv == "rv" & index_df$assay == curr_assay, "primer_num"])
                     )
                 )
