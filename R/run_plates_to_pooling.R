@@ -241,7 +241,7 @@ export_plate_pdfs <- function(df,
                     )
                 )
                 plate_plot_delta_rn <- df %>%
-                    filter(assay == curr_assay) %>%
+                    filter(plate_number == curr_plate & assay == curr_assay) %>%
                     plate_plot(
                         position = Well,
                         value = Delta.Rn,
