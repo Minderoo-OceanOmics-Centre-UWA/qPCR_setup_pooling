@@ -237,17 +237,19 @@ export_plate_pdfs <- function(df,
                         "/",
                         prefix,
                         curr_assay,
+                        "_",
+                        curr_plate,
                         ".pdf"
                     )
                 )
                 plate_plot_delta_rn <- df %>%
-                    filter(plate_number == curr_plate & assay == curr_assay) %>%
+                    filter(assay == curr_assay) %>%
                     plate_plot(
                         position = Well,
                         value = Delta.Rn,
                         label = round(Delta.Rn, digits = 1),
                         plate_size = (plate_width * 2) * (plate_height * 2),
-                        title = paste0(unique(.$plate_number), " ", unique(.$assay))
+                        title = paste0(curr_plate, " ", unique(.$assay))
                     )
                 print(plate_plot_delta_rn)
                 dev.off()
